@@ -1,0 +1,13 @@
+### Note: DO NOT use quantized model or quantization_bit when merging lora adapters
+
+### model
+model_name_or_path: Qwen/Qwen2.5-3B-Instruct
+adapter_name_or_path: /data/tir/projects/tir7/user_data/lmaben/llm-weights/outputs/aura/aura_llmfac_qwen2_5_3b_instruct-lora-epochs4-lr1e-5-10_5kcontext-grad_accum4_perdev4/checkpoint-272
+template: qwen
+trust_remote_code: true
+
+### export
+export_dir: /data/tir/projects/tir7/user_data/lmaben/llm-weights/outputs/aura/aura_llmfac_qwen2_5_3b_instruct-lora-epochs4-lr1e-5-10_5kcontext-grad_accum4_perdev4/merged
+export_size: 5
+export_device: cpu
+export_legacy_format: false

@@ -1,0 +1,49 @@
+#Exp_name to be changed in 2 places
+
+
+output_dir: /data/tir/projects/tir7/user_data/lmaben/llm-weights/outputs/aura/aura_llmfac_qwen2_5_3b_instruct-lora-epochs4-lr1e-5-10_5kcontext-grad_accum4_perdev4
+
+
+model_name_or_path: Qwen/Qwen2.5-3B-Instruct
+
+
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_target: all
+deepspeed: examples/deepspeed/ds_z2_config.json
+
+
+dataset: spokenwoz_dst_train
+template: qwen
+cutoff_len: 10500
+overwrite_cache: true
+preprocessing_num_workers: 16
+
+
+logging_steps: 5
+save_steps: 50
+plot_loss: true
+overwrite_output_dir: true
+
+
+### train
+per_device_train_batch_size: 4
+gradient_accumulation_steps: 4
+learning_rate: 1.0e-5
+num_train_epochs: 4.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
+ddp_timeout: 180000000
+
+
+### eval
+eval_dataset: spokenwoz_dst_val
+per_device_eval_batch_size: 4
+eval_strategy: steps
+eval_steps: 50
+
+
+report_to: wandb
+run_name: aura_llmfac_qwen2_5_3b_instruct-lora-epochs4-lr1e-5-10_5kcontext-grad_accum4_perdev4
