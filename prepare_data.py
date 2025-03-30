@@ -1,8 +1,13 @@
 import json
 from tqdm import tqdm 
 
-PATH = 'text_5700_train_dev/data.json'
-NAME_OUTPUT_FILE = 'train_data.jsonl'
+PATH = 'data/text_5700_train_dev/data.json'
+NAME_OUTPUT_TRAIN_FILE = 'train.jsonl'
+NAME_OUTPUT_DEV_FILE = 'dev.jsonl'
+NAME_OUTPUT_TEST_FILE = 'test.jsonl'
+VAL_LIST_PATH = 'data/text_5700_train_dev/valListFile.json'
+TEST_PATH = 'data/text_5700_test/data.json' 
+
 PROMPT = """
 You are an AI model performing Dialogue State Tracking (DST). Your task is to extract and update the dialogue state based on a conversation between a user and a system. 
 
@@ -73,7 +78,10 @@ profile:
 </INPUT_DIALOG>
 """  
 
-with open('text_5700_train_dev/valListFile.json','r') as f:
+
+## Train and Validation Data Preparation
+
+with open(VAL_LIST_PATH,'r') as f:
     valListFile = f.readlines()
 valListFile = [x.strip() for x in valListFile]
 
@@ -85,8 +93,6 @@ audio_clips = list(data.keys())
 num_of_sig_clips = len([ i for i in audio_clips if 'SNG' in i])
 num_of_multi_clips = len([ i for i in audio_clips if 'MUL' in i])
 total_clips = len(audio_clips)
-
-"We used Sensei Leander's expertise that was pulled out of his GYATT to come up with 7% for dev set"
 
 dev_sig_clips = int( .07 * num_of_sig_clips )
 dev_multi_clips = int( .07 * num_of_multi_clips )
@@ -111,8 +117,8 @@ for audio_clip in tqdm(audio_clips):
         
 
     messages = [   {'role': 'user', 'content': PROMPT.format(INPUT_TEXT=input_text)}  ]
-    messages.append({'role': 'assistant', 'content': f'<DST>\n{dialog_state}\n</DST>'})
-    jsonl_line_to_write = { 'dialog_state': dialog_state, 'messages': messages }
+    messages.append({'role': 'assistant', 'content': f'<DST>\n{json.dumps(dialog_state)}\n</DST>'})
+    jsonl_line_to_write = {'messages': messages }
 
     if 'MUL' in audio_clip and dev_multi_clips > 0:
         dev_multi_clips -= 1
@@ -123,14 +129,42 @@ for audio_clip in tqdm(audio_clips):
     else:
         train_data.append(jsonl_line_to_write)
         
-with open(NAME_OUTPUT_FILE, 'w') as f:
+with open(NAME_OUTPUT_TRAIN_FILE, 'w') as f:
     for line in train_data:
         f.write(json.dumps(line) + '\n')
 
-with open('dev_data.jsonl', 'w') as f:
+with open(NAME_OUTPUT_DEV_FILE, 'w') as f:
     for line in dev_data:
         f.write(json.dumps(line) + '\n')
 
 
-       
+## Test Data Preparation
 
+with open(TEST_PATH) as f:
+    data = json.load(f)
+
+audio_clips = list(data.keys())
+
+test_data = []
+
+for audio_clip in tqdm(audio_clips):
+    audio_clip_data = data[audio_clip]
+    dialog_state = audio_clip_data['goal']
+
+    input_text = ''
+
+    for turn in audio_clip_data['log']:
+        text = turn['text']
+        role = turn['tag']
+        input_text +=  f"{role}: {text}\n"
+        
+
+    messages = [   {'role': 'user', 'content': PROMPT.format(INPUT_TEXT=input_text)}  ]
+    messages.append({'role': 'assistant', 'content': f'<DST>\n{json.dumps(dialog_state)}\n</DST>'})
+    jsonl_line_to_write = {'messages': messages }
+
+    test_data.append(jsonl_line_to_write)
+
+with open(NAME_OUTPUT_TEST_FILE, 'w') as f:
+    for line in test_data:
+        f.write(json.dumps(line) + '\n')
