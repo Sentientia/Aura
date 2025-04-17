@@ -1,15 +1,15 @@
 from actions.action import Action
-from llm.openai_chat_completion import get_response
+from llm.openai_chat_completion import get_response, get_history_as_strings
 
 class DSTAction(Action):
-    def __init__(self, thought: str = '', history: dict[str, any] = {}):
-        super().__init__()
+    def __init__(self, thought: str = '', payload: dict[str, any] = {}):
+        super().__init__(thought, payload)
         #self.message = message
 
     def execute(self,type: str = ''):
         
         if type == 'get_category':
-            PROMPT = """
+            PROMPT ="""
 You are an AI model performing Dialogue State Tracking (DST). Your task is to extract and update the dialogue state based on a conversation between a user and a system. 
 
 To begin with you are supposed to predict which category the user input belongs to within the following categories:
@@ -22,13 +22,19 @@ To begin with you are supposed to predict which category the user input belongs 
 'taxi' : The user wants to book a taxi
 'profile' : information about the user
 
-You have to output which category the user input belongs to. If the user is just greeting return a friendly greeting and how you can help
+You have to output which category the user input belongs to. If the user is just greeting return a friendly greeting and retun None
 
-"""  
+You  have to retrun the answer as in JSON format so that python code can directly read out the output , eg: 
+output:None 
 
+Below is the user converstaion 
 
+{USER_HISTORY}
+"""
+            user_history = get_history_as_strings(self.payload)
+            PROMPT = PROMPT.format(USER_HISTORY=user_history)
 
-        prompt = f"""Below is  a conversation history between a user and an agent. Your job is to figure out what the user is tryin
-The user may start with a greeting or be trying to """
-        pass
+            input =[ {"role": "system", "content": f"{PROMPT}"}]
+            output = get_response(PROMPT)
+           
 

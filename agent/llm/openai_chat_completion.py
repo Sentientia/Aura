@@ -17,3 +17,14 @@ def get_response(prompt):
     completion = client.completions.create(model="meta-llama/Llama-3.3-70B-Instruct",prompt=prompt)
 
     return completion.choices[0].text
+
+def get_history_as_strings(history):
+    output_string = ""
+
+    for message in history:
+        role = message["role"]
+        content = message["content"]
+        output_string += f"{role}: {content}\n"
+    
+    return output_string
+
