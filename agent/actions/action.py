@@ -1,8 +1,12 @@
 class Action:
     def __init__(self, thought: str = '', payload: dict[str, any] = {}):
         self.thought = thought
-        self.payload = payload
+        self.history = payload
+        pass
 
 
     def execute(self):
         pass
+
+
+        

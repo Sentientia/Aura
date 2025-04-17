@@ -1,4 +1,4 @@
-from agent.actions.action import Action
+from action import Action
 
 class ChatAction(Action):
     def __init__(self, message: str):
