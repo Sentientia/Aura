@@ -7,7 +7,7 @@ from controller.state import State
 state = State()
 
 while True:
-    user_input = "Hi, Hello, How are you" #input("You: ")
+    user_input = "Hi, Hello, How are you, LEANDER WANTS TO BOOK AN HOTEL FOR HIS FOREVER IMAGANERY GF" #input("You: ")
     user_input = {"role": "user", "content": user_input}
     state.history.append(user_input)
     output = state.get_tts_output()
