@@ -1,3 +1,5 @@
+import json
+
 SYSTEM_PROMPT = """
 You are an AI concierge agent responsible for helping users with various tasks including restaurant reservations, train bookings, hotel accommodations, and other services. Your primary goal is to gather all necessary information through conversation to fulfill the user's request.
 
@@ -101,8 +103,8 @@ Based on the conversation history and current dialog state, determine the next a
 
 def get_prompt(action_observation_history: list[dict], dialog_state: dict) -> str:
     # Convert inputs to strings
-    action_obs_str = str(action_observation_history)
-    dialog_state_str = str(dialog_state)
+    action_obs_str = json.dumps(action_observation_history)
+    dialog_state_str = json.dumps(dialog_state)
     
     return USER_PROMPT_TEMPLATE.format(
         action_observation_history=action_obs_str,
