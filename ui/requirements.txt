@@ -1,0 +1,10 @@
+gradio==4.43.0
+torch>=2.0.0
+transformers>=4.30.0
+numpy>=1.24.0
+soundfile>=0.12.1
+pydantic==2.10.6
+espnet
+espnet-model-zoo
+
+
