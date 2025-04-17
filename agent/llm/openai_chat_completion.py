@@ -8,15 +8,15 @@ openai_api_base = "http://localhost:8743/v1"
 #                                       prompt="San Francisco is a")
 # print("Completion result:", completion.choices[0].text)
 
-def get_response(prompt,model="meta-llama/Llama-3.3-70B-Instruct"):
+def get_response(messages,model="meta-llama/Llama-3.3-70B-Instruct"):
     pass
     client = OpenAI(
     api_key=openai_api_key,
     base_url=openai_api_base,)
 
-    completion = client.completions.create(model=model,prompt=prompt, temperature=0.1, max_tokens=100)
+    completion = client.chat.completions.create(model=model,messages=messages, temperature=0.1, max_tokens=2000)
 
-    return completion.choices[0].text
+    return completion.choices[0].message.content
 
 def get_history_as_strings(history):
     output_string = ""
