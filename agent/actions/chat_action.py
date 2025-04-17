@@ -1,9 +1,9 @@
-from action import Action
+from agent.actions.action import Action
 
 class ChatAction(Action):
-    def __init__(self, message: str):
-        super().__init__()
-        self.message = message
+    def __init__(self, thought: str, payload: str):
+        super().__init__(thought, payload)
 
-    def execute(self):
-        pass
+    def execute(self) -> str:
+        print(self.payload)
+        return str(input('Enter your response: '))

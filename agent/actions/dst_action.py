@@ -1,5 +1,5 @@
-from actions.action import Action
-from llm.openai_chat_completion import get_response, get_history_as_strings
+from agent.actions.action import Action
+from agent.llm.openai_chat_completion import get_response, get_history_as_strings
 
 class DSTAction(Action):
     def __init__(self, thought: str = '', payload: dict[str, any] = {}):
