@@ -17,14 +17,14 @@ class ChatAgent(BaseAgent):
     def step(self, state: State) -> Action:
         """
         Returns the next action to take based on the current state.
-        """
+        """ 
         action_observation_history = state.history
         dialog_state = state.dst
         prompt = get_prompt(action_observation_history, dialog_state)
         response = get_response(prompt)
 
         thought, action_type, payload = self.parse_response(response)
-        print(f"Thought: {thought}, Action Type: {action_type}, Payload: {payload}")
+        print(f"\n*************INTERNAL-MONOLOGUE***************\nThought: {thought}, \nAction Type: {action_type}, \nPayload: {payload} \nDST state: {state.dst}\n****************INTERNAL-MONOLOGUE************\n")
 
         if action_type == "chat":
             action = ChatAction(thought=thought, payload=payload)
