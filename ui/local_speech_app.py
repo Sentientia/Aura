@@ -103,7 +103,7 @@ def load_tts_model(model_name):
         if model_name in ESPNET_TTS_OPTIONS:
             model_id = ESPNET_TTS_OPTIONS[model_name]
             try:
-                tts_models[model_name] = Text2Speech.from_pretrained(model_id, token=HF_KEY)
+                tts_models[model_name] = Text2Speech.from_pretrained(model_id)
                 print(f"Successfully loaded ESPnet TTS model: {model_name}")
             except Exception as e:
                 print(f"Error loading ESPnet TTS model {model_name}: {e}")
@@ -605,7 +605,7 @@ if __name__ == "__main__":
     print(f"Running in {'GPU' if device == 'cuda' else 'CPU'} mode")
     print("=" * 50)
     
-    # preload_all_models()
+    #preload_all_models()
     
     demo = create_demo()
     demo.launch(
