@@ -77,13 +77,61 @@ def synthesize_speech(text, tts_model_name=None):
         if tts_model_name and tts_model_name in ESPNET_TTS_OPTIONS:
             model = load_tts_model(tts_model_name)
             try:
-                output = model(text)
+                # Check if text is valid
+                if not text or len(text.strip()) == 0:
+                    print("Empty text input provided to TTS, skipping synthesis")
+                    raise ValueError("Empty text input")
+                
+                # Pre-process the text to ensure it's valid for the model
+                # Remove special characters that might cause issues
+                import re
+                cleaned_text = re.sub(r'[^\w\s.,!?;:\-\'"]', ' ', text)
+                cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+                
+                if len(cleaned_text) == 0:
+                    print("Text contains only special characters, using fallback text")
+                    cleaned_text = "I'm sorry, I couldn't process that text."
+                
+                print(f"Processing TTS with text: '{cleaned_text}'")
+                
+                # Use a try-except block with multiple fallback attempts
+                try:
+                    output = model(cleaned_text)
+                except Exception as e1:
+                    print(f"First TTS attempt failed: {e1}, trying with shorter text")
+                    # Try with shorter text if original is too long
+                    if len(cleaned_text) > 100:
+                        shortened_text = cleaned_text[:100] + "..."
+                        try:
+                            output = model(shortened_text)
+                        except Exception as e2:
+                            print(f"Second TTS attempt failed: {e2}, using fallback text")
+                            # Final fallback to a simple, safe text
+                            output = model("I'm sorry, I couldn't synthesize the response.")
+                    else:
+                        # If text is already short, use fallback
+                        print("Using fallback text for TTS")
+                        output = model("I'm sorry, I couldn't synthesize the response.")
+                
+                # Extract audio data
                 sr = model.fs
                 audio_data = output["wav"].numpy()
                 audio_output = (sr, audio_data)
                 print(f"Successfully synthesized speech with {tts_model_name}")
             except Exception as tts_error:
                 print(f"Error in ESPnet TTS: {tts_error}")
+                print("Attempting fallback TTS...")
+                
+                # Try with a simple fallback message
+                try:
+                    fallback_text = "I'm sorry, but I couldn't synthesize the speech for my response."
+                    output = model(fallback_text)
+                    sr = model.fs
+                    audio_data = output["wav"].numpy()
+                    audio_output = (sr, audio_data)
+                    print("Fallback TTS successful")
+                except Exception as fallback_error:
+                    print(f"Fallback TTS also failed: {fallback_error}")
         
     except Exception as e:
         print(f"Error in TTS synthesis: {e}")
@@ -317,30 +365,27 @@ def generate_response(transcript, llm_model_name, system_prompt):
     print(f"LLM response generation completed in {latency_LLM:.2f} seconds")
     return response
 
-def preload_all_models():
-    """Pre-download and cache all models at startup"""
-    print("=" * 50)
-    print("Starting pre-downloading models...")
-    print("=" * 50)
+# NEW FUNCTION: Clear audio input after processing
+def clear_audio_input(clear=True):
+    """Clear the audio input if the clear parameter is True"""
+    if clear:
+        print("Clearing audio input")
+        return None
+    else:
+        # Return None as a placeholder, since we're not actually modifying anything if clear=False
+        return None
+
+def process_speech_and_clear(audio_input, asr_option, llm_option, system_prompt, tts_option=None, clear=True):
+    """Process speech and clear audio input afterwards if clear is True"""
+    # First process the speech as normal
+    input_audio, transcript, response, output_audio = process_speech(audio_input, asr_option, llm_option, system_prompt, tts_option)
     
-    # Pre-load ASR models
-    for model_name in ASR_OPTIONS.keys():
-        print(f"Pre-downloading ASR model: {model_name}")
-        load_asr_model(model_name)
+    # If clear is True, audio_input should be set to None for the next round
+    if clear:
+        input_audio = None
+        print("🎤 Ready to record your response!")
     
-    # Pre-load LLM models
-    for model_name in LLM_OPTIONS.keys():
-        print(f"Pre-downloading LLM model: {model_name}")
-        load_llm_model(model_name)
-    
-    # Pre-load TTS models
-    for model_name in ESPNET_TTS_OPTIONS.keys():
-        print(f"Pre-downloading TTS model: {model_name}")
-        load_tts_model(model_name)
-    
-    print("=" * 50)
-    print("Finished pre-downloading all models")
-    print("=" * 50)
+    return input_audio, transcript, response, output_audio
 
 def process_speech(audio_input, asr_option, llm_option, system_prompt, tts_option=None):
     """Process speech: ASR -> LLM -> TTS pipeline"""
@@ -352,10 +397,7 @@ def process_speech(audio_input, asr_option, llm_option, system_prompt, tts_optio
         return None, "", "", None
     
     try:
-        # Get audio data
         sr, audio_data = audio_input
-        
-        # Log audio characteristics for debugging
         print(f"Audio input: SR={sr}, shape={audio_data.shape}, dtype={audio_data.dtype}")
         
         # ASR: Speech to text
@@ -374,8 +416,9 @@ def process_speech(audio_input, asr_option, llm_option, system_prompt, tts_optio
         
         # Check if audio_output is None (indicating an error in speech synthesis)
         if audio_output is None:
-            print("Failed to synthesize speech, returning error")
-            return audio_input, transcript, response, None
+            print("Failed to synthesize speech, returning error message")
+            # Add TTS failure message to the response so user knows what happened
+            response += "\n\n[Note: Text-to-speech conversion failed. Please check the server logs for details.]"
             
         print("Speech processing pipeline completed successfully")
         
@@ -402,117 +445,97 @@ def reset_conversation():
     return None, "", "", None, ""
 
 def display_conversation():
-    """Display the conversation history with enhanced styling and animations"""
+    """Display the conversation history with a simplified monochrome design and emojis"""
     if not conversation_history:
         return """
-        <div style="background-color: #f5f7fa; border-radius: 12px; padding: 20px; font-family: 'Segoe UI', Arial, sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-            <div style="display: flex; justify-content: center; align-items: center; height: 100px;">
-                <p style="color: #8796ab; text-align: center; font-size: 16px;">No conversation yet. Start by recording your message.</p>
-            </div>
+        <div style="background-color: #f0f5fa; border-radius: 8px; padding: 16px; font-family: 'Segoe UI', Arial, sans-serif;">
+            <p style="color: #6e7c91; text-align: center; font-size: 14px;">No conversation yet. Start by recording your message.</p>
         </div>
         """
-    
-    # Start with container div with improved styling and max-height for scrolling
     output = """
-    <div style="background-color: #f5f7fa; border-radius: 12px; padding: 0; max-height: 500px; overflow-y: auto; font-family: 'Segoe UI', Arial, sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-        <div style="position: sticky; top: 0; background-color: #ffffff; border-radius: 12px 12px 0 0; padding: 15px 20px; border-bottom: 1px solid #e1e5eb; z-index: 10;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="color: #2d3748; margin: 0; font-weight: 600; font-size: 18px;">Conversation History</h3>
-                <div style="background-color: #e6f2ff; color: #3182ce; font-size: 12px; padding: 4px 10px; border-radius: 12px; font-weight: 500;">{} messages</div>
-            </div>
-        </div>
-        <div style="padding: 20px;">
-    """.format(len(conversation_history))
-    
-    # Format timestamp with improved styling
-    timestamp = datetime.datetime.now().strftime("%B %d, %Y %H:%M")
-    output += f'<div style="font-size: 12px; color: #8796ab; text-align: center; margin-bottom: 20px; padding: 6px 12px; background-color: #edf2f7; border-radius: 12px; display: inline-block;">{timestamp}</div>'
-    
-    # Add each message with animation classes and improved styling
-    for i, item in enumerate(conversation_history):
+    <div style="background-color: #f0f5fa; border-radius: 8px; padding: 16px; max-height: 500px; overflow-y: auto; font-family: 'Segoe UI', Arial, sans-serif;">
+    """
+    for item in conversation_history:
         role = item["role"]
         content = item["content"]
         
-        # Add animation delay based on message position
-        animation_delay = i * 0.1
-        
         if role == "user":
-            # User message styling with animation
             output += f"""
-            <div class="message-container" style="margin-bottom: 20px; animation: fadeIn 0.3s ease forwards; animation-delay: {animation_delay}s; opacity: 0;">
+            <div style="margin-bottom: 12px;">
                 <div style="display: flex; align-items: flex-start;">
-                    <div style="background-color: #4285f4; color: white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(66,133,244,0.3);">
-                        <span style="font-weight: 600;">U</span>
-                    </div>
-                    <div style="background-color: #e6f2ff; border-radius: 3px 18px 18px 18px; padding: 12px 16px; max-width: 85%; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                        <p style="margin: 0; color: #2d3748; line-height: 1.5;">{content}</p>
-                        <div style="font-size: 11px; color: #8796ab; text-align: right; margin-top: 5px;">
-                            {datetime.datetime.now().strftime("%H:%M")}
-                        </div>
+                    <div style="margin-right: 8px; font-size: 16px;">👤</div>
+                    <div style="background-color: #e1ebf7; border-radius: 8px; padding: 10px; max-width: 90%;">
+                        <p style="margin: 0; color: #2c3e50; line-height: 1.4;">{content}</p>
                     </div>
                 </div>
             </div>
             """
         else:
-            # Assistant message styling with animation
             output += f"""
-            <div class="message-container" style="margin-bottom: 20px; display: flex; justify-content: flex-end; animation: fadeIn 0.3s ease forwards; animation-delay: {animation_delay}s; opacity: 0;">
+            <div style="margin-bottom: 12px; display: flex; justify-content: flex-end;">
                 <div style="display: flex; align-items: flex-start; flex-direction: row-reverse;">
-                    <div style="background-color: #10b981; color: white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; margin-left: 12px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(16,185,129,0.3);">
-                        <span style="font-weight: 600;">A</span>
-                    </div>
-                    <div style="background-color: #f8fafc; border-radius: 18px 3px 18px 18px; padding: 12px 16px; max-width: 85%; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 3px solid #10b981;">
-                        <p style="margin: 0; color: #2d3748; line-height: 1.5;">{content}</p>
-                        <div style="font-size: 11px; color: #8796ab; text-align: right; margin-top: 5px;">
-                            {datetime.datetime.now().strftime("%H:%M")}
-                        </div>
+                    <div style="margin-left: 8px; font-size: 16px;">🤖</div>
+                    <div style="background-color: #d8e6f3; border-radius: 8px; padding: 10px; max-width: 90%;">
+                        <p style="margin: 0; color: #2c3e50; line-height: 1.4;">{content}</p>
                     </div>
                 </div>
             </div>
             """
     
-    # Add CSS animations
     output += """
-        </div>
     </div>
     <style>
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .message-container {
-            transition: all 0.3s ease;
-        }
-        
-        /* Scrollbar styling */
+        /* Simple scrollbar styling */
         div::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
         
         div::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
+            background: #eef2f7;
+            border-radius: 6px;
         }
         
         div::-webkit-scrollbar-thumb {
-            background: #cbd5e0;
-            border-radius: 10px;
+            background: #b8c6db;
+            border-radius: 6px;
         }
         
         div::-webkit-scrollbar-thumb:hover {
-            background: #a0aec0;
+            background: #99a9bf;
         }
     </style>
     """
     
     return output
 
+def display_record_message(show=False):
+    """Display a message prompting the user to record their response"""
+    if show:
+        return """
+        <div style="background-color: #e7f7ed; border-radius: 8px; padding: 12px; margin-bottom: 15px; 
+                font-family: 'Segoe UI', Arial, sans-serif; border-left: 4px solid #10b981;
+                animation: fadeIn 0.5s ease-in-out; display: flex; align-items: center;">
+            <span style="font-size: 20px; margin-right: 10px;">🎤</span>
+            <p style="margin: 0; color: #0f766e; font-weight: 500;">Ready to record your response!</p>
+            <span style="font-size: 20px; margin-left: 10px;"></span>
+        </div>
+        <style>
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        </style>
+        """
+    else:
+        return ""
+
 # Create Gradio interface with styled conversation
 def create_demo():
     with gr.Blocks(title="Speech Conversation System", css="""
         .conversation-container {border: 1px solid #ddd; border-radius: 10px; overflow: hidden;}
         .conversation-container h3 {background-color: #f5f5f5; padding: 12px; margin: 0; border-bottom: 1px solid #ddd;}
+        /* Hide submit button */
+        #submit-btn {display: none;}
     """) as demo:
         gr.Markdown(
             """
@@ -520,17 +543,22 @@ def create_demo():
             
             This demo showcases a speech-to-speech task-oriented dialogue agent that results in tool use
             
-            **Record your speech using the microphone, then click submit to process your query.**
+            **Record your speech, and it will be automatically processed as soon as you stop recording.**
             """
         )
         
+        record_message = gr.HTML()
+        
         with gr.Row():
             with gr.Column(scale=2):
+                record_message = gr.HTML()
+                
                 audio_input = gr.Audio(
                     label="Record your speech",
                     sources=["microphone"],
                     type="numpy",
-                    streaming=False
+                    streaming=False,
+                    autoplay=False
                 )
                 
                 system_prompt = gr.Textbox(
@@ -559,24 +587,28 @@ def create_demo():
                 )
                 
                 with gr.Row():
-                    submit_btn = gr.Button("Process Speech", variant="primary")
+                    submit_btn = gr.Button("Process Speech", variant="primary", elem_id="submit-btn")
                     reset_btn = gr.Button("Reset Conversation")
                 
-                # Output elements
                 user_transcript = gr.Textbox(label="Your Speech (ASR Output)")
                 system_response = gr.Textbox(label="AI Response (LLM Output)")
                 audio_output = gr.Audio(label="AI Voice Response", autoplay=True)
                 latency_info = gr.Textbox(label="Performance Metrics")
             
-            # Right column for conversation history
             with gr.Column(scale=1, elem_classes="conversation-container"):
                 conversation_display = gr.HTML(label="Conversation History")
         
-        # Event handlers
-        submit_btn.click(
-            process_speech,
+        def show_record_message():
+            return display_record_message(True)
+            
+        def hide_record_message():
+            return display_record_message(False)
+        
+        # Event handlers - Process speech automatically when audio is recorded
+        audio_input.stop_recording(
+            process_speech_and_clear,  # Process speech when recording stops
             inputs=[audio_input, asr_dropdown, llm_dropdown, system_prompt, tts_dropdown],
-            outputs=[audio_input, user_transcript, system_response, audio_output]
+            outputs=[audio_input, user_transcript, system_response, audio_output]  
         ).then(
             display_latency,
             inputs=[],
@@ -585,6 +617,36 @@ def create_demo():
             display_conversation,
             inputs=[],
             outputs=[conversation_display]
+        ).then(
+            show_record_message,  # Show the record message after processing
+            inputs=[],
+            outputs=[record_message]
+        )
+        
+        # Hide the record message when a new recording starts
+        audio_input.start_recording(
+            hide_record_message,
+            inputs=[],
+            outputs=[record_message]
+        )
+        
+        # Also keep the submit button as a fallback option
+        submit_btn.click(
+            process_speech_and_clear,
+            inputs=[audio_input, asr_dropdown, llm_dropdown, system_prompt, tts_dropdown],
+            outputs=[audio_input, user_transcript, system_response, audio_output]  
+        ).then(
+            display_latency,
+            inputs=[],
+            outputs=[latency_info]
+        ).then(
+            display_conversation,
+            inputs=[],
+            outputs=[conversation_display]
+        ).then(
+            show_record_message,
+            inputs=[],
+            outputs=[record_message]
         )
         
         reset_btn.click(
@@ -595,6 +657,10 @@ def create_demo():
             display_conversation,
             inputs=[],
             outputs=[conversation_display]
+        ).then(
+            show_record_message, 
+            inputs=[],
+            outputs=[record_message]
         )
     
     return demo
@@ -610,6 +676,6 @@ if __name__ == "__main__":
     demo = create_demo()
     demo.launch(
         server_name="127.0.0.1",
-        server_port=7860,
+        server_port=7861,
         share=True
     )
