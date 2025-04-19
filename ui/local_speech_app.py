@@ -604,6 +604,8 @@ def create_demo():
         def hide_record_message():
             return display_record_message(False)
         
+        t = True
+        
         # Event handlers - Process speech automatically when audio is recorded
         audio_input.stop_recording(
             process_speech_and_clear,  # Process speech when recording stops
@@ -618,36 +620,18 @@ def create_demo():
             inputs=[],
             outputs=[conversation_display]
         ).then(
-            show_record_message,  # Show the record message after processing
+            fn=lambda: show_record_message() if t else "",  # Show the record message after processing
             inputs=[],
             outputs=[record_message]
         )
         
         # Hide the record message when a new recording starts
         audio_input.start_recording(
-            hide_record_message,
+            fn=lambda: hide_record_message() if t else "",
             inputs=[],
             outputs=[record_message]
         )
         
-        # Also keep the submit button as a fallback option
-        submit_btn.click(
-            process_speech_and_clear,
-            inputs=[audio_input, asr_dropdown, llm_dropdown, system_prompt, tts_dropdown],
-            outputs=[audio_input, user_transcript, system_response, audio_output]  
-        ).then(
-            display_latency,
-            inputs=[],
-            outputs=[latency_info]
-        ).then(
-            display_conversation,
-            inputs=[],
-            outputs=[conversation_display]
-        ).then(
-            show_record_message,
-            inputs=[],
-            outputs=[record_message]
-        )
         
         reset_btn.click(
             reset_conversation,
@@ -658,7 +642,7 @@ def create_demo():
             inputs=[],
             outputs=[conversation_display]
         ).then(
-            show_record_message, 
+            fn=lambda: show_record_message() if t else "" , 
             inputs=[],
             outputs=[record_message]
         )
