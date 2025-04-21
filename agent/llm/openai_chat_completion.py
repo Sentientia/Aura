@@ -11,7 +11,6 @@ openai_api_base = "http://localhost:8743/v1"
 # print("Completion result:", completion.choices[0].text)
 
 def get_response(messages,model="meta-llama/Llama-3.3-70B-Instruct"):
-def get_response(messages,model="meta-llama/Llama-3.3-70B-Instruct"):
     pass
     client = OpenAI(
     api_key=openai_api_key,
@@ -19,7 +18,6 @@ def get_response(messages,model="meta-llama/Llama-3.3-70B-Instruct"):
 
     completion = client.chat.completions.create(model=model,messages=messages, temperature=0.1, max_tokens=2000)
 
-    return completion.choices[0].message.content.strip()
     return completion.choices[0].message.content.strip()
 
 def get_history_as_strings(history):
