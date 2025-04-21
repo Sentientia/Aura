@@ -11,6 +11,19 @@ from espnet_model_zoo.downloader import ModelDownloader
 from espnet2.bin.asr_inference import Speech2Text
 from espnet2.bin.tts_inference import Text2Speech
 from espnet2.bin.s2t_inference_ctc import Speech2TextGreedySearch
+import re
+import nltk
+
+try:
+    nltk_resources = ['averaged_perceptron_tagger', 'averaged_perceptron_tagger_eng']
+    for resource in nltk_resources:
+        try:
+            nltk.data.find(f'taggers/{resource}')
+        except LookupError:
+            print(f"Downloading NLTK resource: {resource}")
+            nltk.download(resource, quiet=True)
+except Exception as e:
+    print(f"Failed to download NLTK resources: {e}")
 
 latency_ASR = 0.0
 latency_LLM = 0.0
@@ -52,6 +65,93 @@ espnet_models = {}
 tts_models = {}
 owsm_models = {}
 
+# ======================
+# New Agent Functions
+# ======================
+
+def get_user_input(audio_input, asr_model_name):
+    """
+    Get user input via recording and transcription
+    
+    Args:
+        audio_input: Audio input data from Gradio
+        asr_model_name: The ASR model to use for transcription
+        
+    Returns:
+        str: The transcribed text from the user's speech
+    """
+    if audio_input is None:
+        print("No audio input provided")
+        return ""
+    
+    try:
+        sr, audio_data = audio_input
+        print(f"Processing user input - Audio: SR={sr}, shape={audio_data.shape}")
+        
+        # Transcribe the audio
+        transcript = transcribe_audio(audio_data, sr, asr_model_name)
+        print(f"User input transcribed: {transcript}")
+        
+        return transcript
+    except Exception as e:
+        print(f"Error in get_user_input: {e}")
+        return ""
+
+def agent_output(response_text, tts_model_name=None):
+    """
+    Generate speech output for agent response
+    
+    Args:
+        response_text: Text response from the agent
+        tts_model_name: The TTS model to use for synthesis
+        
+    Returns:
+        tuple: Audio output data (sample_rate, audio_data)
+    """
+    print(f"Generating speech for agent response: {response_text}")
+    
+    # Synthesize speech from the response text
+    audio_output = synthesize_speech(response_text, tts_model_name)
+    
+    # Handle TTS failure
+    if audio_output is None:
+        print("Failed to synthesize speech, returning error message")
+        
+    return audio_output
+
+def update_conversation_display(user_text=None, agent_text=None):
+    """
+    Update the conversation history and display
+    
+    Args:
+        user_text: Text from the user (if any)
+        agent_text: Text from the agent (if any)
+        
+    Returns:
+        str: HTML for displaying the updated conversation
+    """
+    global conversation_history
+    
+    # Function can be called in two ways:
+    # 1. With specific texts to add to the conversation
+    # 2. Without arguments, just to refresh the display
+    
+    # Add user message if provided
+    if user_text and user_text.strip():
+        print(f"Adding user message to conversation: {user_text}")
+        conversation_history.append({"role": "user", "content": user_text})
+    
+    # Add agent message if provided
+    if agent_text and agent_text.strip():
+        print(f"Adding agent message to conversation: {agent_text}")
+        conversation_history.append({"role": "assistant", "content": agent_text})
+    
+    # Generate and return the HTML display
+    return display_conversation()
+
+# ======================
+# ======================
+
 def synthesize_speech(text, tts_model_name=None):
     """Synthesize speech from text using the selected TTS model"""
     global latency_TTS
@@ -62,80 +162,59 @@ def synthesize_speech(text, tts_model_name=None):
     audio_output = None
     
     try:
+        if not tts_model_name or tts_model_name not in ESPNET_TTS_OPTIONS:
+            print("Invalid or missing TTS model name")
+            return None
+            
+        model = load_tts_model(tts_model_name)
+        if model is None:
+            print("Failed to load TTS model")
+            return None
+            
+        # Check if text is valid
+        if not text or len(text.strip()) == 0:
+            print("Empty text input provided to TTS, skipping synthesis")
+            return None
+        
+        # Pre-process the text to ensure it's valid for the model
+        cleaned_text = re.sub(r'[^\w\s.,!?;:\-\'"]', ' ', text)
+        cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+        
+        if len(cleaned_text) == 0:
+            print("Text contains only special characters, using fallback text")
+            cleaned_text = "I'm sorry, I couldn't process that text."
+        
+        print(f"Processing TTS with text: '{cleaned_text}'")
+        
+        # Try synthesis with different text lengths if needed
         try:
-            import nltk
-            nltk_resources = ['averaged_perceptron_tagger', 'averaged_perceptron_tagger_eng']
-            for resource in nltk_resources:
+            output = model(cleaned_text)
+        except Exception as e:
+            print(f"TTS attempt failed: {e}")
+            
+            # If text is too long, try with shorter text
+            if len(cleaned_text) > 100:
+                print("Trying with shorter text")
+                shortened_text = cleaned_text[:100] + "..."
                 try:
-                    nltk.data.find(f'taggers/{resource}')
-                except LookupError:
-                    print(f"Downloading NLTK resource: {resource}")
-                    nltk.download(resource, quiet=True)
-        except Exception:
-            pass
+                    output = model(shortened_text)
+                except Exception:
+                    print("Shortened text attempt failed, using fallback")
+                    output = model("I'm sorry, I couldn't synthesize the response.")
+            else:
+                # If text is already short, use fallback
+                print("Using fallback text for TTS")
+                output = model("I'm sorry, I couldn't synthesize the response.")
         
-        if tts_model_name and tts_model_name in ESPNET_TTS_OPTIONS:
-            model = load_tts_model(tts_model_name)
-            try:
-                # Check if text is valid
-                if not text or len(text.strip()) == 0:
-                    print("Empty text input provided to TTS, skipping synthesis")
-                    raise ValueError("Empty text input")
-                
-                # Pre-process the text to ensure it's valid for the model
-                # Remove special characters that might cause issues
-                import re
-                cleaned_text = re.sub(r'[^\w\s.,!?;:\-\'"]', ' ', text)
-                cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
-                
-                if len(cleaned_text) == 0:
-                    print("Text contains only special characters, using fallback text")
-                    cleaned_text = "I'm sorry, I couldn't process that text."
-                
-                print(f"Processing TTS with text: '{cleaned_text}'")
-                
-                # Use a try-except block with multiple fallback attempts
-                try:
-                    output = model(cleaned_text)
-                except Exception as e1:
-                    print(f"First TTS attempt failed: {e1}, trying with shorter text")
-                    # Try with shorter text if original is too long
-                    if len(cleaned_text) > 100:
-                        shortened_text = cleaned_text[:100] + "..."
-                        try:
-                            output = model(shortened_text)
-                        except Exception as e2:
-                            print(f"Second TTS attempt failed: {e2}, using fallback text")
-                            # Final fallback to a simple, safe text
-                            output = model("I'm sorry, I couldn't synthesize the response.")
-                    else:
-                        # If text is already short, use fallback
-                        print("Using fallback text for TTS")
-                        output = model("I'm sorry, I couldn't synthesize the response.")
-                
-                # Extract audio data
-                sr = model.fs
-                audio_data = output["wav"].numpy()
-                audio_output = (sr, audio_data)
-                print(f"Successfully synthesized speech with {tts_model_name}")
-            except Exception as tts_error:
-                print(f"Error in ESPnet TTS: {tts_error}")
-                print("Attempting fallback TTS...")
-                
-                # Try with a simple fallback message
-                try:
-                    fallback_text = "I'm sorry, but I couldn't synthesize the speech for my response."
-                    output = model(fallback_text)
-                    sr = model.fs
-                    audio_data = output["wav"].numpy()
-                    audio_output = (sr, audio_data)
-                    print("Fallback TTS successful")
-                except Exception as fallback_error:
-                    print(f"Fallback TTS also failed: {fallback_error}")
-        
+        # Extract audio data
+        sr = model.fs
+        audio_data = output["wav"].numpy()
+        audio_output = (sr, audio_data)
+        print(f"Successfully synthesized speech with {tts_model_name}")
+            
     except Exception as e:
         print(f"Error in TTS synthesis: {e}")
-
+        # No need for additional fallback here since we already have fallbacks above
     
     latency_TTS = time.time() - start_time
     print(f"TTS synthesis completed in {latency_TTS:.2f} seconds")
@@ -315,7 +394,7 @@ def transcribe_audio(audio_data, sr, asr_model_name):
 
 def generate_response(transcript, llm_model_name, system_prompt):
     """Generate response using selected LLM model"""
-    global latency_LLM, conversation_history
+    global latency_LLM
     
     start_time = time.time()
     print(f"Starting LLM response generation with model: {llm_model_name}")
@@ -352,10 +431,6 @@ def generate_response(transcript, llm_model_name, system_prompt):
             # Extract just the response part
             if "Assistant:" in response:
                 response = response.split("Assistant:")[-1].strip()
-            
-            # Add to conversation history
-            conversation_history.append({"role": "user", "content": transcript})
-            conversation_history.append({"role": "assistant", "content": response})
     
     except Exception as e:
         print(f"Error in LLM response generation: {e}")
@@ -365,30 +440,16 @@ def generate_response(transcript, llm_model_name, system_prompt):
     print(f"LLM response generation completed in {latency_LLM:.2f} seconds")
     return response
 
-# NEW FUNCTION: Clear audio input after processing
 def clear_audio_input(clear=True):
     """Clear the audio input if the clear parameter is True"""
     if clear:
         print("Clearing audio input")
         return None
     else:
-        # Return None as a placeholder, since we're not actually modifying anything if clear=False
         return None
 
 def process_speech_and_clear(audio_input, asr_option, llm_option, system_prompt, tts_option=None, clear=True):
     """Process speech and clear audio input afterwards if clear is True"""
-    # First process the speech as normal
-    input_audio, transcript, response, output_audio = process_speech(audio_input, asr_option, llm_option, system_prompt, tts_option)
-    
-    # If clear is True, audio_input should be set to None for the next round
-    if clear:
-        input_audio = None
-        print("🎤 Ready to record your response!")
-    
-    return input_audio, transcript, response, output_audio
-
-def process_speech(audio_input, asr_option, llm_option, system_prompt, tts_option=None):
-    """Process speech: ASR -> LLM -> TTS pipeline"""
     print("Starting speech processing pipeline")
     
     # Check if audio input is available
@@ -397,36 +458,35 @@ def process_speech(audio_input, asr_option, llm_option, system_prompt, tts_optio
         return None, "", "", None
     
     try:
-        sr, audio_data = audio_input
-        print(f"Audio input: SR={sr}, shape={audio_data.shape}, dtype={audio_data.dtype}")
+        # Get user input (transcribe speech)
+        transcript = get_user_input(audio_input, asr_option)
         
-        # ASR: Speech to text
-        print("Starting ASR step")
-        transcript = transcribe_audio(audio_data, sr, asr_option)
-        print(f"ASR transcript: {transcript}")
+        # Add user message to conversation history
+        if transcript:
+            conversation_history.append({"role": "user", "content": transcript})
         
-        # LLM: Generate response
-        print("Starting LLM step")
+        # Generate LLM response
         response = generate_response(transcript, llm_option, system_prompt)
-        print(f"LLM response: {response}")
         
-        # TTS: Text to speech
-        print("Starting TTS step")
-        audio_output = synthesize_speech(response, tts_option)
+        # Add assistant message to conversation history
+        if response:
+            conversation_history.append({"role": "assistant", "content": response})
         
-        # Check if audio_output is None (indicating an error in speech synthesis)
-        if audio_output is None:
-            print("Failed to synthesize speech, returning error message")
-            # Add TTS failure message to the response so user knows what happened
-            response += "\n\n[Note: Text-to-speech conversion failed. Please check the server logs for details.]"
-            
+        # Convert response to speech
+        output_audio = agent_output(response, tts_option)
+        
+        # Clear audio input if needed
+        if clear:
+            input_audio = None
+            print("🎤 Ready to record your response!")
+        else:
+            input_audio = audio_input
+        
         print("Speech processing pipeline completed successfully")
-        
-        # Return results
-        return audio_input, transcript, response, audio_output
+        return input_audio, transcript, response, output_audio
     except Exception as e:
-        print(f"Error in process_speech: {e}")
-        return audio_input, f"Error processing audio: {str(e)}", "I couldn't process your speech properly. Please try again.", None
+        print(f"Error in process_speech_and_clear: {e}")
+        return None, f"Error processing audio: {str(e)}", "I couldn't process your speech properly. Please try again.", None
 
 def display_latency():
     """Display latency information"""
@@ -529,7 +589,6 @@ def display_record_message(show=False):
     else:
         return ""
 
-# Create Gradio interface with styled conversation
 def create_demo():
     with gr.Blocks(title="Speech Conversation System", css="""
         .conversation-container {border: 1px solid #ddd; border-radius: 10px; overflow: hidden;}
@@ -608,7 +667,7 @@ def create_demo():
         
         # Event handlers - Process speech automatically when audio is recorded
         audio_input.stop_recording(
-            process_speech_and_clear,  # Process speech when recording stops
+            fn=process_speech_and_clear,
             inputs=[audio_input, asr_dropdown, llm_dropdown, system_prompt, tts_dropdown],
             outputs=[audio_input, user_transcript, system_response, audio_output]  
         ).then(
@@ -616,11 +675,11 @@ def create_demo():
             inputs=[],
             outputs=[latency_info]
         ).then(
-            display_conversation,
+            display_conversation,  # Display updated conversation without adding new messages
             inputs=[],
             outputs=[conversation_display]
         ).then(
-            fn=lambda: show_record_message() if t else "",  # Show the record message after processing
+            fn=lambda: show_record_message() if t else "",
             inputs=[],
             outputs=[record_message]
         )
