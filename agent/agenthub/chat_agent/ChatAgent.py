@@ -4,7 +4,9 @@ from agent.actions.action import Action
 from agent.llm.openai_chat_completion import get_response
 from agent.agenthub.chat_agent.prompts import get_prompt
 from agent.actions.chat_action import ChatAction
+from agent.actions.calendar_action import CalendarAction
 import re
+import json
 class ChatAgent(BaseAgent):
     def __init__(self):
         super().__init__()
@@ -18,23 +20,25 @@ class ChatAgent(BaseAgent):
         """
         Returns the next action to take based on the current state.
         """ 
-        action_observation_history = state.history
-        dialog_state = state.dst
-        prompt = get_prompt(action_observation_history, dialog_state)
+
+        prompt = get_prompt(state.conversation, state.dst)
         response = get_response(prompt)
 
         thought, action_type, payload = self.parse_response(response)
-        print(f"\n*************INTERNAL-MONOLOGUE***************\nThought: {thought}, \nAction Type: {action_type}, \nPayload: {payload} \nDST state: {state.dst}\n****************INTERNAL-MONOLOGUE************\n")
+        print(f"\n*************INTERNAL-MONOLOGUE***************\nThought: {thought}, \nAction Type: {action_type}, \nPayload: {payload} \nConversation History: {state.conversation} \nAction-Observation History: {state.history} \nDST state: {state.dst}\n****************INTERNAL-MONOLOGUE************\n")
 
         if action_type == "chat":
             action = ChatAction(thought=thought, payload=payload)
+        elif action_type == "calendar":
+            action = CalendarAction(thought=thought, payload=payload)
+        else:
+            action = ChatAction(thought="Invalid action type", payload="There was an error parsing the action type. Please try again.")
         return action
     
     def parse_response(self, response: str) -> tuple[str, str, str]:
         # Action will be within <action> tags
         # Payload will be within <payload> tags
         # Thought will be in <thought>
-        # Use regex to find the tags
         thought_match = re.search(r'<thought>\s*(.*?)\s*</thought>', response, re.DOTALL)
         action_match = re.search(r'<action>\s*(.*?)\s*</action>', response, re.DOTALL)
         payload_match = re.search(r'<payload>\s*(.*?)\s*</payload>', response, re.DOTALL)

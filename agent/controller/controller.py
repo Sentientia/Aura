@@ -8,24 +8,45 @@ from agent.agenthub.chat_agent.ChatAgent import ChatAgent
 from agent.dst.dst_action import DSTAction
 from agent.actions.chat_action import ChatAction
 
-state = State()
-agent = ChatAgent()
-dst = DSTAction()
 
-while True:
-    action = agent.step(state)
-    observation = action.execute()
+class Controller:
+    def __init__(self):
+        self.state = State()
+        self.agent = ChatAgent()
+        self.dst = DSTAction()
 
-    if isinstance(action, ChatAction):
-        state.conversation.extend([{"role": "assistant", "content": action.payload},{"role": "user", "content": observation}])
 
-    state.history.extend([{"role": "assistant", "content": action.payload},{"role": "user", "content": observation}])
-     
+    def get_next_chat_action(self):
+        #action = None
+        #while not isinstance(action, ChatAction):
+        action = self.agent.step(self.state)
+        observation = action.execute(self.state)
 
-    if state.dst_class is None:
-        state.dst_class = DSTAction(thought='Have to get DST category', payload=state.conversation).execute(type='get_category')['output']
-    else:
-        state.dst = DSTAction(thought='Have to get DST category', payload=state.conversation).execute(type=state.dst_class)
+        return action, observation
+    
+    def add_user_input(self, user_input):
+        self.state.conversation.append({"role": "user", "content": user_input})
+        if len(self.state.history) > 0 and self.state.history[-1]['observation']['payload'] is None:
+            self.state.history[-1]['observation']['payload'] = user_input
+        elif len(self.state.history) == 0:
+            self.state.history.append({"action": None , 
+                              "observation": {"type":"chat", "role":"user", "payload":user_input}})
+    
+    def run(self):
+        while True:
+            action = self.agent.step(self.state)
+            observation = action.execute()
+
+            if isinstance(action, ChatAction):
+                self.state.conversation.extend([{"role": "assistant", "content": action.payload},{"role": "user", "content": observation}])
+
+            self.state.history.extend([{"role": "assistant", "content": action.payload},{"role": "user", "content": observation}])
+            
+
+            if self.state.dst_class is None:
+                self.state.dst_class = DSTAction(thought='Have to get DST category', payload=state.conversation).execute(type='get_category')['output']
+            else:
+                self.state.dst = DSTAction(thought='Have to get DST category', payload=self.state.conversation).execute(type=self.state.dst_class)
     
 
 
