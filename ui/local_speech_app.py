@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import numpy as np
 import gradio as gr
@@ -13,6 +14,13 @@ from espnet2.bin.tts_inference import Text2Speech
 from espnet2.bin.s2t_inference_ctc import Speech2TextGreedySearch
 import re
 import nltk
+from agent.actions.chat_action import ChatAction
+# Add the project root directory to Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
+# Now import the agent module
+from agent.controller.controller import Controller
 
 try:
     nltk_resources = ['averaged_perceptron_tagger', 'averaged_perceptron_tagger_eng']
@@ -64,6 +72,12 @@ llm_models = {}
 espnet_models = {}
 tts_models = {}
 owsm_models = {}
+
+# ======================
+# Initialize Agent Controller
+# ======================
+
+controller = Controller()
 
 # ======================
 # New Agent Functions
@@ -450,6 +464,8 @@ def clear_audio_input(clear=True):
 
 def process_speech_and_clear(audio_input, asr_option, llm_option, system_prompt, tts_option=None, clear=True):
     """Process speech and clear audio input afterwards if clear is True"""
+    global latency_LLM
+
     print("Starting speech processing pipeline")
     
     # Check if audio input is available
@@ -460,16 +476,24 @@ def process_speech_and_clear(audio_input, asr_option, llm_option, system_prompt,
     try:
         # Get user input (transcribe speech)
         transcript = get_user_input(audio_input, asr_option)
+
         
         # Add user message to conversation history
         if transcript:
+            controller.add_user_input(transcript)
             conversation_history.append({"role": "user", "content": transcript})
         
-        # Generate LLM response
-        response = generate_response(transcript, llm_option, system_prompt)
+        # Generate response from agent
+        start_time = time.time()
+        action, observation = controller.get_next_chat_action()
+        latency_LLM = time.time() - start_time
+        if isinstance(action, ChatAction):
+            response = action.payload
+        else:
+            response = "I have created a calendar event for you. Aura, signing off!"
         
         # Add assistant message to conversation history
-        if response:
+        if response :
             conversation_history.append({"role": "assistant", "content": response})
         
         # Convert response to speech
