@@ -487,10 +487,11 @@ def process_speech_and_clear(audio_input, asr_option, llm_option, system_prompt,
         start_time = time.time()
         action, observation = controller.get_next_chat_action()
         latency_LLM = time.time() - start_time
-        if isinstance(action, ChatAction):
-            response = action.payload
-        else:
-            response = "I have created a calendar event for you. Aura, signing off!"
+        response = action.payload
+        # if isinstance(action, ChatAction):
+        #     response = action.payload
+        # else:
+        #     response = "I have created a calendar event for you. Aura, signing off!"
         
         # Add assistant message to conversation history
         if response :
