@@ -14,13 +14,21 @@ from espnet2.bin.tts_inference import Text2Speech
 from espnet2.bin.s2t_inference_ctc import Speech2TextGreedySearch
 import re
 import nltk
-from agent.actions.chat_action import ChatAction
 # Add the project root directory to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
+from agent.actions.chat_action import ChatAction
 # Now import the agent module
 from agent.controller.controller import Controller
+
+import os
+
+# Set custom temp directory before importing gradio
+os.environ['GRADIO_TEMP_DIR'] = os.path.join(os.path.expanduser("~"), "gradio_temp")
+# Make sure the directory exists
+os.makedirs(os.environ['GRADIO_TEMP_DIR'], exist_ok=True)
+
 
 try:
     nltk_resources = ['averaged_perceptron_tagger', 'averaged_perceptron_tagger_eng']
@@ -40,16 +48,22 @@ conversation_history = []
 
 HF_KEY = os.getenv('HF_API_KEY')
 
-use_gpu = torch.cuda.is_available()
-device = "cuda" if use_gpu else "cpu"
-print(f"Using device: {device}")
+# Improved device handling - consistent variable for all components
+if torch.cuda.is_available():
+    device = "cuda"
+    torch_device = torch.device("cuda")
+    print(f"CUDA is available. Using GPU: {torch.cuda.get_device_name(0)}")
+else:
+    device = "cpu"
+    torch_device = torch.device("cpu")
+    print("CUDA is not available. Using CPU for processing.")
 
 ASR_OPTIONS = {
+    "OWSM CTC v3.1 1B": "espnet/owsm_ctc_v3.1_1B",
     "Whisper Tiny": "openai/whisper-tiny",
     # "Wav2Vec2 Small": "facebook/wav2vec2-base-960h",
-    "ESPnet Librispeech": "espnet/simpleoier_librispeech_asr_train_asr_conformer_raw_en_bpe5000_sp",
     # "ESPnet English": "espnet/kan-bayashi_ljspeech_joint_finetune_conformer_fastspeech2_hifigan",
-    "OWSM CTC v3.1 1B": "espnet/owsm_ctc_v3.1_1B",
+    
     # "OWSM CTC v3.2 1B": "espnet/owsm_ctc_v3.2_ft_1B"
 }
 
@@ -60,8 +74,7 @@ ESPNET_TTS_OPTIONS = {
 }
 
 LLM_OPTIONS = {
-    "DistilGPT2": "distilgpt2",
-    "GPT-2 Small": "gpt2",
+    "Agent": "llama-70b",
     # "Llama Fine-tuned": "llama-ft",
     # Add other options here
 }
@@ -82,7 +95,6 @@ controller = Controller()
 # ======================
 # New Agent Functions
 # ======================
-
 def get_user_input(audio_input, asr_model_name):
     """
     Get user input via recording and transcription
@@ -102,7 +114,8 @@ def get_user_input(audio_input, asr_model_name):
         sr, audio_data = audio_input
         print(f"Processing user input - Audio: SR={sr}, shape={audio_data.shape}")
         
-        # Transcribe the audio
+        # Audio data is already loaded as numpy array, no need to save to disk
+        # We can pass it directly to the transcribe_audio function
         transcript = transcribe_audio(audio_data, sr, asr_model_name)
         print(f"User input transcribed: {transcript}")
         
@@ -111,6 +124,7 @@ def get_user_input(audio_input, asr_model_name):
         print(f"Error in get_user_input: {e}")
         return ""
 
+        
 def agent_output(response_text, tts_model_name=None):
     """
     Generate speech output for agent response
@@ -222,7 +236,7 @@ def synthesize_speech(text, tts_model_name=None):
         
         # Extract audio data
         sr = model.fs
-        audio_data = output["wav"].numpy()
+        audio_data = output["wav"].cpu().numpy()
         audio_output = (sr, audio_data)
         print(f"Successfully synthesized speech with {tts_model_name}")
             
@@ -244,7 +258,8 @@ def load_tts_model(model_name):
         if model_name in ESPNET_TTS_OPTIONS:
             model_id = ESPNET_TTS_OPTIONS[model_name]
             try:
-                tts_models[model_name] = Text2Speech.from_pretrained(model_id)
+                # Use the global device variable
+                tts_models[model_name] = Text2Speech.from_pretrained(model_id, device=device)
                 print(f"Successfully loaded ESPnet TTS model: {model_name}")
             except Exception as e:
                 print(f"Error loading ESPnet TTS model {model_name}: {e}")
@@ -262,13 +277,17 @@ def load_asr_model(model_name):
         if "OWSM" in model_name:
             model_id = ASR_OPTIONS[model_name]
             try:
-                owsm_models[model_name] = Speech2TextGreedySearch.from_pretrained(
-                    model_id,
-                    device="cpu",  
-                    use_flash_attn=False,
+                d = ModelDownloader(cachedir = "/data/user_data/gganeshl/speech")
+                model_dict = d.download_and_unpack(model_id)
+                
+                if "train_config" in model_dict:
+                    model_dict.pop("train_config")
+                owsm_models[model_name] = Speech2TextGreedySearch(
+                    **model_dict,
+                    device=device,  # Use global device
+                    use_flash_attn=torch.cuda.is_available(),  # Only use if CUDA is available
                     lang_sym='<eng>',
                     task_sym='<asr>',
-                    token=HF_KEY,
                 )
                 print(f"Successfully loaded OWSM ASR model: {model_name}")
             except Exception as e:
@@ -280,7 +299,7 @@ def load_asr_model(model_name):
         elif "ESPnet" in model_name and "OWSM" not in model_name:
             model_id = ASR_OPTIONS[model_name]
             try:
-                d = ModelDownloader()
+                d = ModelDownloader(cachedir = "/data/user_data/gganeshl/speech")
                 model_dict = d.download_and_unpack(model_id)
                 
                 if "train_config" in model_dict:
@@ -288,14 +307,13 @@ def load_asr_model(model_name):
                 
                 speech2text = Speech2Text(
                     **model_dict,
-                    device="cpu",
+                    device=device,  # Use global device
                     minlenratio=0.0,
                     maxlenratio=0.0,
                     ctc_weight=0.3,
                     beam_size=10,
                     batch_size=0,
                     nbest=1,
-                    token=HF_KEY
                 )
                 espnet_models[model_name] = speech2text
                 print(f"Successfully loaded ESPnet ASR model: {model_name}")
@@ -310,7 +328,7 @@ def load_asr_model(model_name):
                 asr_models[model_name] = pipeline(
                     "automatic-speech-recognition", 
                     model=model_id,
-                    device=-1  # Fix this
+                    device=0 if device == "cuda" else -1  # Use 0 for CUDA, -1 for CPU
                 )
                 print(f"Successfully loaded ASR model: {model_name}")
             except Exception as e:
@@ -334,7 +352,11 @@ def load_llm_model(model_name):
         
         try:
             tokenizer = AutoTokenizer.from_pretrained(model_id, token=HF_KEY)
-            model = AutoModelForCausalLM.from_pretrained(model_id, token=HF_KEY)
+            model = AutoModelForCausalLM.from_pretrained(
+                model_id, 
+                device_map='auto' if device == "cuda" else None,  # Use device_map for CUDA
+                token=HF_KEY
+            )
             
             llm_models[model_name] = {
                 "model": model,
@@ -361,7 +383,6 @@ def transcribe_audio(audio_data, sr, asr_model_name):
         else:
             # Convert audio to float32 for compatibility with ASR models
             if audio_data.dtype != np.float32:
-                # Normalize to [-1, 1] range for float32
                 audio_data = audio_data.astype(np.float32)
                 if audio_data.max() > 1.0:
                     audio_data = audio_data / 32768.0  # Normalize from int16 range
@@ -428,6 +449,10 @@ def generate_response(transcript, llm_model_name, system_prompt):
             
             # Generate text
             input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+            
+            # Use the proper device
+            if device == "cuda":
+                input_ids = input_ids.to(torch_device)
             
             with torch.no_grad():
                 outputs = model.generate(
@@ -660,7 +685,7 @@ def create_demo():
                     llm_dropdown = gr.Dropdown(
                         choices=list(LLM_OPTIONS.keys()),
                         value=list(LLM_OPTIONS.keys())[0],
-                        label="Select LLM Model"
+                        label="Select Agent"
                     )
                 
                 tts_choices = list(ESPNET_TTS_OPTIONS.keys()) 
@@ -737,9 +762,11 @@ if __name__ == "__main__":
     print("=" * 50)
     print("Starting Speech Conversation System")
     print(f"Running in {'GPU' if device == 'cuda' else 'CPU'} mode")
+    if device == "cuda":
+        print(f"GPU: {torch.cuda.get_device_name(0)}")
+        print(f"CUDA Version: {torch.version.cuda}")
+        print(f"Available GPU memory: {torch.cuda.get_device_properties(0).total_memory / (1024**3):.2f} GB")
     print("=" * 50)
-    
-    #preload_all_models()
     
     demo = create_demo()
     demo.launch(
