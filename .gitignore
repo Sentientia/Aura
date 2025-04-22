@@ -3,3 +3,6 @@ data/
 setup.py
 agent/secrets
 __pycache__/
+accent_adaptive_asr/exp/
+accent_adaptive_asr/hf_model/
+accent_adaptive_asr/original.pth

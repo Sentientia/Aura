@@ -1,0 +1,56 @@
+rir_scp: null
+rir_apply_prob: 1.0
+noise_scp: null
+noise_apply_prob: 1.0
+noise_db_range: '13_15'
+speech_volume_normalize: null
+non_linguistic_symbols: null
+
+preprocessor_conf:
+  speech_name: speech
+  text_name: text
+
+# training related
+seed: 2024
+num_workers: 1
+ngpu: 1
+batch_type: unsorted
+batch_bins: 1600000
+batch_size: 8
+accum_grad: 4
+max_epoch: 5
+log_interval: 10
+patience: 2
+init: null
+best_model_criterion:
+-   - valid
+    - acc
+    - max
+keep_nbest_models: 3
+use_amp: false
+multiple_iterator: false
+use_wandb: true
+
+optim: adamw
+optim_conf:
+    lr: 0.0001
+    weight_decay: 0.000001
+scheduler: steplr
+scheduler_conf:
+    step_size: 1000
+
+specaug: specaug
+specaug_conf:
+    apply_time_warp: true
+    time_warp_window: 5
+    time_warp_mode: bicubic
+    apply_freq_mask: true
+    freq_mask_width_range:
+    - 0
+    - 27
+    num_freq_mask: 2
+    apply_time_mask: true
+    time_mask_width_ratio_range:
+    - 0.
+    - 0.05
+    num_time_mask: 5
