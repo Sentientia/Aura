@@ -1,4 +1,3 @@
-# Install required libraries
 import os
 import shutil
 import json
@@ -7,8 +6,8 @@ from huggingface_hub import HfApi, HfFolder
 from espnet2.bin.s2t_inference import Speech2Text
 
 # Set your HF username and model name
-HF_USERNAME = "reecursion"  
-MODEL_NAME = "accent-adaptive-owsm_v3.1_ebf_base"  
+HF_USERNAME = "reecursion"
+MODEL_NAME = "accent-adaptive-owsm_v3.1_ebf_base"
 REPO_ID = f"{HF_USERNAME}/{MODEL_NAME}"
 
 # Create directory structure for the model
@@ -17,15 +16,13 @@ os.makedirs(model_dir, exist_ok=True)
 os.makedirs(f"{model_dir}/espnet_model", exist_ok=True)
 
 # Load and save the fine-tuned model
-# First, load your fine-tuned model
-finetuned_model_path = "/home/gganeshl/speech/exp/finetune/valid.acc.best.pth"
+finetuned_model_path = "/home/gganeshl/Aura/accent_adaptive_asr/exp/finetune/valid.acc.best.pth"
 finetuned_weights = torch.load(finetuned_model_path)
 
 # Save the model weights
 torch.save(finetuned_weights, f"{model_dir}/espnet_model/model.pth")
 
 # Save configuration files
-# Copy the config.yaml from the original model
 original_model = "espnet/owsm_v3.1_ebf_base"
 pretrained_model = Speech2Text.from_pretrained(
     original_model,
@@ -55,7 +52,6 @@ if tokenizer_dir:
 
 # Create a readme file
 readme = f"""# Common Accent ASR Model
-
 This is a fine-tuned ASR model based on [espnet/owsm_v3.1_ebf_base](https://huggingface.co/espnet/owsm_v3.1_ebf_base) trained on the [DTU54DL/common-accent](https://huggingface.co/datasets/DTU54DL/common-accent) dataset.
 
 ## Model details
@@ -64,7 +60,6 @@ This is a fine-tuned ASR model based on [espnet/owsm_v3.1_ebf_base](https://hugg
 - Task: Automatic Speech Recognition
 
 ## Usage
-
 ```python
 import torch
 import numpy as np
@@ -79,29 +74,40 @@ model = Speech2Text.from_pretrained(
 )
 
 # Example inference
-waveform = ...  # Load your audio as numpy array
+waveform = ... # Load your audio as numpy array
 transcription = model(waveform)
-print(transcription[0][0])  # Print the transcription"""
-
+print(transcription[0][0]) # Print the transcription
+```"""
 
 # Write the readme to a file
 with open(f"{model_dir}/README.md", "w") as f:
     f.write(readme)
 
+finetune_source = "/home/gganeshl/Aura/accent_adaptive_asr/exp/finetune"
+finetune_dest = f"{model_dir}/exp/finetune"
+os.makedirs(os.path.dirname(finetune_dest), exist_ok=True)
+
+# Copy the entire finetune directory structure
+def copy_directory(src, dst):
+    if not os.path.exists(dst):
+        os.makedirs(dst)
+    for item in os.listdir(src):
+        s = os.path.join(src, item)
+        d = os.path.join(dst, item)
+        if os.path.isdir(s):
+            copy_directory(s, d)
+        else:
+            # Skip large checkpoint files if needed to save space
+            # Uncomment the following if you want to exclude certain files
+            # if not (item.endswith('.pth') and item != 'valid.acc.best.pth'):
+            shutil.copy2(s, d)
+
+# Copy the finetune directory
+copy_directory(finetune_source, finetune_dest)
+print(f"Copied {finetune_source} to {finetune_dest}")
+
 # Upload to Hugging Face
 api = HfApi()
-
-# Login to Hugging Face - you'll need to set your token first
-# You can use HF_TOKEN environment variable or login interactively
-# token = "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"
-# if token:
-#     api.set_access_token(token)
-# else:
-#     # You'll need to run huggingface-cli login once before this
-#     token = HfFolder.get_token()
-#     if not token:
-#         print("Please login using `huggingface-cli login` or set HF_TOKEN environment variable")
-#         exit(1)
 
 # Create the repository (if it doesn't exist)
 try:
@@ -116,7 +122,7 @@ api.upload_folder(
     folder_path=model_dir,
     repo_id=REPO_ID,
     repo_type="model",
-    commit_message="Upload fine-tuned OWSM model",
+    commit_message="Upload fine-tuned OWSM model with exp/finetune directory",
 )
 
 print(f"Model uploaded successfully! Access it at: https://huggingface.co/{REPO_ID}")
