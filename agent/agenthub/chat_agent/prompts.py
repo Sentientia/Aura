@@ -357,16 +357,38 @@ You can perform three types of actions:
    - Provide information or confirmations
    - Keep pleasantries to a minimum (one exchange only)
    - Clarify any uncertainties
+   - Give results of web searches, calendar bookings, contact information etc.
+   - Always trigger after any other type of action is triggered.
+   - In the turn after a web search give the user the information they asked for, after contact give the user the contact information they asked for, after calendar give the user the calendar event confirmation.
 
-2. SEARCH: Query the database to:
-   - Find matching restaurants, hotels, trains, etc.
-   - Get specific details about available options
-   - Only perform after gathering sufficient information
+2. WEB_SEARCH: Query the web to:
+   - Get specific details about the question asked by the user
+   - Only trigger when a user asks you to search for something on the web
+   - Never trigger twice in a row
+   - Only trigger once per user request
+   - Always trigger a chat action after this action
 
 3. CALENDAR: Book appointments by:
    - Creating calendar events
-   - Always trigger when the user asks you to book a slot on their calendar
    - Only trigger when a user asks you to book a slot on their calendar
+   - Never trigger twice in a row
+   - Only trigger once per user request
+   - Always trigger a chat action after this action
+
+4. CONTACT: Get contact information by:
+   - Getting contact information from the user's email
+   - Only trigger when a user asks you to get contact information like someone's email id
+   - Never trigger twice in a row
+   - Only trigger once per user request
+   - Always trigger a chat action after this action
+
+5. EMAIL: Send an email by:
+   - Sending an email to the user's email
+   - Only trigger when a user asks you to send an email
+   - Never trigger twice in a row
+   - Only trigger once per user request
+   - Always trigger a chat action after this action
+   - The payload will be a json object with 'to', 'subject', 'content' keys
 
 RESPONSE FORMAT:
 Your responses must be structured as follows:
@@ -380,16 +402,18 @@ Your reasoning about:
 </thought>
 
 <action>
-One of: ['chat', 'search', 'calendar']
+One of: ['chat', 'web_search', 'calendar', 'contact', 'email']
 </action>
 
 <payload>
 If action is 'chat':
 - Your next message to the user
-If action is 'search':
+If action is 'web_search':
 - The search query to execute
 If action is 'calendar':
 - The calendar event details to create in the form of a json object with start_time(MUST be a UTC string in the format '%Y-%m-%dT%H:%M:%S'), end_time(MUST be a UTC string in the format '%Y-%m-%dT%H:%M:%S' or None), title, description
+If action is 'email':
+- The email details to send in the form of a json object with 'to', 'subject', 'content' keys
 </payload>
 
 DIALOG STATE TRACKING:
@@ -405,8 +429,9 @@ You will be provided with the current dialog state, which tracks information abo
 Your goal is to:
 1. Identify which fields in the dialog state are relevant to the current task
 2. Ask questions to fill in missing required fields
-3. Search for the required information when the user asks you to book a slot on their calendar
+3. Search for the required information when the user asks you to 
 4. Book the slot on the user's calendar when the user asks you to book a slot on their calendar
+5. Send an email to the user's email when the user asks you to send an email
 
 Remember:
 - Be professional and courteous
@@ -460,11 +485,39 @@ Action-Observation History:
   },
   {
     "action": {"type": "chat", "role": "assistant", "payload": "Hello, I am Aura. How can I help you today?"},
-    "observation": {"type": "chat", "role": "user", "payload": "Hi, I'm looking to book a train to London Kings Cross."}
+    "observation": {"type": "chat", "role": "user", "payload": "Hi, I'm looking to book a train to Pittsburgh."}
   },
   {
     "action": {"type": "chat", "role": "assistant", "payload": "Sure, could you please tell me where you're departing from, what day you'd like to travel?"},
     "observation": {"type": "chat", "role": "user", "payload": "I'll be leaving from Cambridge on the 25th of April at 10am. Please book my calendar slot."}
+  },
+  {
+      "action": {"type":"calendar", "payload":json.dumps({
+        "start_time": "2025-04-25T10:00:00",
+        "end_time": None,
+        "title": "Train to London Kings Cross",
+        "description": "I'll be leaving from Cambridge on the 25th of April at 10am."
+    })}, "observation": {"type": "calendar", "payload": "Calendar event created"}
+  },
+  {
+    "action": {"type":"chat", "role":"assistant", "payload":"Calendar event created"},
+    "observation": {"type":"chat", "role":"user", "payload":"Can you so a web search on the weather in Pittsburgh today?"}
+  },
+  {
+      "action": {"type":"web_search", "payload":"weather in Pittsburgh today"},
+      "observation": {"type":"web_search", "payload":json.dumps([{"snippet": "Pittsburgh, PA Forecast  Morning. 46. Chance of Rain0%  Afternoon. 67. Chance of Rain1 Evening. 53. Chance of Rain3%  Overnight. 43. Chance of Rain11% ...", "snippet_highlighted_words": ["Pittsburgh, PA Forecast"], "title": "Weather Forecast and Conditions for Pittsburgh, PA", "source": "The Weather Channel"}, {"snippet": "Weather Today in Pittsburgh, PA. Feels Like80. 6:31 am. 8:05 pm. High / Low. 80/52. Wind. 16 mph. Humidity. 44%. Dew Point. 55. Pressure. 29.90 in.", "snippet_highlighted_words": ["Feels Like80"], "title": "Weather Forecast and Conditions for Pittsburgh, PA", "source": "The Weather Channel"}, {"snippet": "Pittsburgh, PA Weather Forecast, with current conditions, wind, air quality ... Today's Weather. Tue, Apr 22. Partly sunny and pleasant Hi: 72. Tonight ...", "snippet_highlighted_words": ["Pittsburgh, PA Weather"], "title": "Pittsburgh, PA Weather Forecast", "source": "AccuWeather"}])}
+  },
+  {
+    "action": {"type":"chat", "role":"assistant", "payload":"The weather in Pittsburgh today is partly sunny and pleasant and feels like 80 degrees Fahrenheit."},
+    "observation": {"type":"chat", "role":"user", "payload":"Can you find Joe's email id?"}
+  },
+  {
+    "action": {"type":"contact", "payload":None},
+    "observation": {"type":"contact", "payload":json.dumps({"length": 14, "contacts": ["Leander Maben <lmaben@andrew.cmu.edu>", "Gayathri Ganesh Lakshmy <gganeshl@andrew.cmu.edu>", "Google Cloud <googlecloud@google.com>", "lmaben@andrew.cmu.edu", "contact@serpapi.com", "lmaben@andrew.cmu.edu", "no-reply@serpapi.com", "lmaben@andrew.cmu.edu", "11-967 on Piazza <no-reply@piazza.com>", "lmaben@andrew.cmu.edu", "Gayathri Ganesh Lakshmy (via Google Drive) <drive-shares-dm-noreply@google.com>", "lmaben@andrew.cmu.edu", "11-967 on Piazza <no-reply@piazza.com>", "Joe Trevolta Stuart <joe.stuart@gmail.com>"]})}
+  },
+  {
+    "action": {"type":"chat", "role":"assistant", "payload":"Is joe.stuart@gmail.com the correct email id?"},
+    "observation": {"type":"chat", "role":"user", "payload":"That's correct. Now send him an email with the details and ask if he would like to come."}
   }
 ])}
 
@@ -472,7 +525,7 @@ Current Dialog State:
 {json.dumps( {
     "train": {
         "info": {
-            "destination": "london kings cross",
+            "destination": "Pittsburgh",
             "departure": "cambridge",
             "date": "2025-04-25",
             "time": "10:00"
@@ -482,70 +535,20 @@ Current Dialog State:
 
 Output:
 <thought>
-The user has now provided destination ('London Kings Cross'), departure ('Cambridge'), date ('25th of April'), and start time ('10 am').
-User has not provided end time, so I will output None.
-Since the user has asked me to book a calendar slot, I will trigger a calendar action.
+The user has now provided destination ('Pittsburgh'), departure ('Cambridge'), date ('2025-04-25'), and time ('10:00').
+I also have information about the weather at Pittsburgh and Joe's email id.
+The user has asked me to send an email to Joe with the details and ask if he would like to come.
+So I will trigger an email action.
 </thought>
 <action>
-calendar
+email
 </action>
 <payload>
-{
-    json.dumps({
-        "start_time": "2025-04-25T10:00:00",
-        "end_time": None,
-        "title": "Train to London Kings Cross",
-        "description": "I'll be leaving from Cambridge on the 25th of April at 10am."
-    })
-}
+{json.dumps({"to": "joe.stuart@gmail.com", "subject": "Trip to Pittsburgh on the 25th of April 2025", "content": "Hello, Leander here. I am looking to book a train to Pittsburgh on the 25th of April at 10am. The weather in Pittsburgh today is partly sunny and pleasant and feels like 80 degrees Fahrenheit. Would you like to come?"})}
 </payload>
 
-Example 3:
 
-Input:
-
-Action-Observation History:
-{json.dumps([
-  {
-    "action": None,
-    "observation": {"type": "chat", "role": "user", "payload": "Hi, I am Leander."}
-  },
-  {
-    "action": {"type": "chat", "role": "assistant", "payload": "Hello, I am Aura. How can I help you today?"},
-    "observation": {"type": "chat", "role": "user", "payload": "Hi, I'm looking to book a train to London Kings Cross."}
-  },
-  {
-    "action": {"type": "chat", "role": "assistant", "payload": "Sure, could you please tell me where you're departing from, what day you'd like to travel, and how many people will be travelling?"},
-    "observation": {"type": "chat", "role": "user", "payload": "I'll be leaving from Cambridge on Friday. There are three of us."}
-  }
-])}
-
-Current Dialog State:
-{json.dumps( {
-    "train": {
-        "book": {
-            "people": "3",
-        },
-        "info": {
-            "destination": "london kings cross",
-            "departure": "cambridge",
-            "day": "friday"
-        }
-    }
-  })}
-
-Output:
-<thought>
-The user has now provided destination ('London Kings Cross'), departure ('Cambridge'), day ('Friday'), and people ('3').
-Only time constraints such as 'arriveBy' or 'leaveAt' are missing.
-I will ask the user whether they have a preferred departure or arrival time before performing a search.
-</thought>
-<action>
-chat
-</action>
-<payload>
-Got it. Do you have a specific time you'd like to arrive in London, or a time you'd like to leave from Cambridge?
-</payload>
+REMEMBER: You MUST trigger a chat action after any other action like web_search, calendar, contact.
 """
 
 USER_PROMPT_TEMPLATE="""
@@ -556,10 +559,14 @@ Action-Observation History:
 Current Dialog State:
 {dialog_state}
 
+Last Action:
+{last_action}
+
 Based on the conversation history and current dialog state, determine the next action to take.
+If last action was not a chat action, you MUST trigger a chat action now.
 """ 
 
-def get_prompt(action_observation_history: list[dict], dialog_state: dict) -> str:
+def get_prompt(action_observation_history: list[dict], dialog_state: dict, last_action: str) -> str:
     # Convert inputs to strings
     action_obs_str = json.dumps(action_observation_history)
     dialog_state_str = json.dumps(dialog_state)
@@ -568,6 +575,7 @@ def get_prompt(action_observation_history: list[dict], dialog_state: dict) -> st
         {'role': 'system', 'content': SYSTEM_PROMPT_SHORT},
         {'role': 'user', 'content': USER_PROMPT_TEMPLATE.format(
             action_observation_history=action_obs_str,
-            dialog_state=dialog_state_str
+            dialog_state=dialog_state_str,
+            last_action=last_action
         )}
     ]

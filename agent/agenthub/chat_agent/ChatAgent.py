@@ -5,23 +5,22 @@ from agent.llm.openai_chat_completion import get_response
 from agent.agenthub.chat_agent.prompts import get_prompt
 from agent.actions.chat_action import ChatAction
 from agent.actions.calendar_action import CalendarAction
+from agent.actions.web_search_action import WebSearchAction
+from agent.actions.contact_action import ContactAction
+from agent.actions.email_action import EmailAction
 import re
 import json
+
 class ChatAgent(BaseAgent):
     def __init__(self):
         super().__init__()
-        self.available_actions = [
-            "chat",
-            "search",
-            "calendar",
-            "finish"
-        ]
+       
     def step(self, state: State) -> Action:
         """
         Returns the next action to take based on the current state.
         """ 
 
-        prompt = get_prompt(state.conversation, state.dst)
+        prompt = get_prompt(state.conversation, state.dst, state.history[-1]["action"]["type"])
         response = get_response(prompt)
 
         thought, action_type, payload = self.parse_response(response)
@@ -31,6 +30,12 @@ class ChatAgent(BaseAgent):
             action = ChatAction(thought=thought, payload=payload)
         elif action_type == "calendar":
             action = CalendarAction(thought=thought, payload=payload)
+        elif action_type == "web_search":
+            action = WebSearchAction(thought=thought, payload=payload)
+        elif action_type == "contact":
+            action = ContactAction(thought=thought, payload=None)
+        elif action_type == "email":
+            action = EmailAction(thought=thought, payload=payload)
         else:
             action = ChatAction(thought="Invalid action type", payload="There was an error parsing the action type. Please try again.")
         return action

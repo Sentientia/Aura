@@ -17,10 +17,11 @@ class Controller:
 
 
     def get_next_chat_action(self):
-        #action = None
-        #while not isinstance(action, ChatAction):
-        action = self.agent.step(self.state)
-        observation = action.execute(self.state)
+        action = None
+        observation = None
+        while not isinstance(action, ChatAction):
+            action = self.agent.step(self.state)
+            observation = action.execute(self.state)
 
         return action, observation
     
@@ -29,7 +30,7 @@ class Controller:
         if len(self.state.history) > 0 and self.state.history[-1]['observation']['payload'] is None:
             self.state.history[-1]['observation']['payload'] = user_input
         elif len(self.state.history) == 0:
-            self.state.history.append({"action": None , 
+            self.state.history.append({"action": {"type":None, "payload":None} , 
                               "observation": {"type":"chat", "role":"user", "payload":user_input}})
     
     def run(self):
