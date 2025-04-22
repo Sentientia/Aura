@@ -1,0 +1,39 @@
+no change     /home/gganeshl/miniconda3/condabin/conda
+no change     /home/gganeshl/miniconda3/bin/conda
+no change     /home/gganeshl/miniconda3/bin/conda-env
+no change     /home/gganeshl/miniconda3/bin/activate
+no change     /home/gganeshl/miniconda3/bin/deactivate
+no change     /home/gganeshl/miniconda3/etc/profile.d/conda.sh
+no change     /home/gganeshl/miniconda3/etc/fish/conf.d/conda.fish
+no change     /home/gganeshl/miniconda3/shell/condabin/Conda.psm1
+no change     /home/gganeshl/miniconda3/shell/condabin/conda-hook.ps1
+no change     /home/gganeshl/miniconda3/lib/python3.12/site-packages/xontrib/conda.xsh
+no change     /home/gganeshl/miniconda3/etc/profile.d/conda.csh
+no change     /home/gganeshl/.bashrc
+No action taken.
+Failed to import Flash Attention, using ESPnet default: No module named 'flash_attn'
+Installation success!
+Loading DTU54DL/common-accent dataset...
+Dataset info: DatasetDict({
+    train: Dataset({
+        features: ['audio', 'sentence', 'accent'],
+        num_rows: 10000
+    })
+    test: Dataset({
+        features: ['audio', 'sentence', 'accent'],
+        num_rows: 451
+    })
+})
+Train size: Dataset({
+    features: ['audio', 'transcription'],
+    num_rows: 1500
+})
+Validation size: Dataset({
+    features: ['audio', 'transcription'],
+    num_rows: 100
+})
+Test size: Dataset({
+    features: ['audio', 'transcription'],
+    num_rows: 200
+})
+Trainable parameters: 366653348

@@ -1,0 +1,9 @@
+
+CondaError: Run 'conda init' before 'conda activate'
+
+/home/gganeshl/miniconda3/envs/speech/lib/python3.9/site-packages/espnet2/enh/loss/criterions/time_domain.py:446: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  @torch.cuda.amp.autocast(enabled=False)
+/home/gganeshl/miniconda3/envs/speech/lib/python3.9/site-packages/espnet2/enh/encoder/stft_encoder.py:79: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  @torch.cuda.amp.autocast(enabled=False)
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 136400.13it/s]
+/home/gganeshl/miniconda3/envs/speech/bin/python /home/gganeshl/Aura/accent_adaptive_asr/asr_ft.py

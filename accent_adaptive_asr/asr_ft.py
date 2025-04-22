@@ -6,6 +6,7 @@ import librosa
 from espnet2.bin.s2t_inference import Speech2Text # Core ESPnet module for pre-trained models
 # Datasets library
 from datasets import load_dataset, Audio
+import os
 
 print("Installation success!")
 
@@ -17,6 +18,13 @@ dataset = dataset.rename_column("sentence", "transcription")
 dataset = dataset.remove_columns(["accent"])
 dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
 
+
+DIR = f"/data/user_data/gganeshl/owsm_v3.2/exp"
+os.makedirs(DIR, exist_ok=True)
+EXP_DIR = f"/data/user_data/gganeshl/owsm_v3.2/exp/finetune"
+os.makedirs(EXP_DIR, exist_ok=True)
+STATS_DIR = f"/data/user_data/gganeshl/owsm_v3.2/exp/stats_finetune"
+os.makedirs(STATS_DIR, exist_ok=True)
 
 # Split dataset into train, validation, and test
 train_dataset = dataset["train"]
@@ -30,7 +38,9 @@ print(f"Train size: {(train_dataset)}")
 print(f"Validation size: {(valid_dataset)}")
 print(f"Test size: {(test_dataset)}")
 
-FINETUNE_MODEL="espnet/owsm_v3.1_ebf_base"
+# FINETUNE_MODEL="espnet/owsm_v3.1_ebf_base"
+# FINETUNE_MODEL = "espnet/owsm_v3.1_ebf_small"
+FINETUNE_MODEL = "espnet/owsm_v3.2"
 owsm_language="eng" # language code in ISO3
 
 pretrained_model = Speech2Text.from_pretrained(
@@ -39,7 +49,7 @@ pretrained_model = Speech2Text.from_pretrained(
     beam_size=1,
     device='cuda'
 )
-torch.save(pretrained_model.s2t_model.state_dict(), 'original.pth')
+torch.save(pretrained_model.s2t_model.state_dict(), '/data/user_data/gganeshl/owsm_v3.2/exp/original.pth')
 pretrain_config = vars(pretrained_model.s2t_train_args)
 tokenizer = pretrained_model.tokenizer
 converter = pretrained_model.converter
@@ -80,15 +90,10 @@ def build_model_fn(args):
   print(f'Trainable parameters: {count_parameters(model)}')
   return model
 
-
-
-
-EXP_DIR = f"./exp/finetune"
-STATS_DIR = f"./exp/stats_finetune"
 finetune_config = ez.config.update_finetune_config(
 	's2t',
 	pretrain_config,
-	f"./config/finetune.yaml"
+	f"/home/gganeshl/Aura/accent_adaptive_asr/config/finetune.yaml"
 )
 
 # You can edit your config by changing the finetune.yaml file directly (but make sure you rerun this cell again!)
