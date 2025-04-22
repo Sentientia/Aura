@@ -1,51 +1,22 @@
 from agent.actions.action import Action
 from agent.controller.state import State
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
+
 from googleapiclient.discovery import build
 import os.path
 import pickle
 from datetime import datetime, timedelta
 import json
+from agent.actions.utils import parse_payload, get_credentials
 
-SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 
 class CalendarAction(Action):
     def __init__(self, thought: str, payload: str):
         super().__init__(thought, payload)
 
-    def initial_login(self):
-        """Performs initial login and saves credentials."""
-        flow = InstalledAppFlow.from_client_secrets_file(
-            os.path.join(os.getcwd(), 'agent/secrets/client_secret_aura.json'), SCOPES)
-        creds = flow.run_local_server(port=0)
-        
-        # Save the credentials for future use
-        with open(os.path.join(os.getcwd(), 'agent/secrets/token.pickle'), 'wb') as token:
-            pickle.dump(creds, token)
-        
-        return creds
-
-    def get_credentials(self):
-        """Gets valid user credentials from storage."""
-        creds = None
-        if os.path.exists('agent/secrets/token.pickle'):
-            with open('agent/secrets/token.pickle', 'rb') as token:
-                creds = pickle.load(token)
-        
-        # If there are no (valid) credentials available, let the user log in.
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                creds = self.initial_login()
-        
-        return creds
-
     def create_calendar_event(self, summary='Aura Slot', start_time=(datetime.now() + timedelta(minutes=10)).isoformat(), end_time=(datetime.now() + timedelta(minutes=25)).isoformat(), description=None):
 
-        creds = self.get_credentials()
+        creds = get_credentials()
         service = build('calendar', 'v3', credentials=creds)
 
         event = {
@@ -65,13 +36,6 @@ class CalendarAction(Action):
 
         event = service.events().insert(calendarId='primary', body=event).execute()
         return event
-    
-    def parse_payload(self, payload: str) -> dict:
-        try:
-            json_payload = json.loads(payload)
-            return json_payload
-        except:
-            return None
         
     def is_valid_utc(self, dt_str):
         try:
@@ -83,7 +47,7 @@ class CalendarAction(Action):
             return False
 
     def execute(self, state: State) -> str:
-        info = self.parse_payload(self.payload)
+        info = parse_payload(self.payload)
 
         if 'start_time' in info and self.is_valid_utc(info['start_time']):
             start_time = info['start_time']
