@@ -5,5 +5,112 @@ CondaError: Run 'conda init' before 'conda activate'
   @torch.cuda.amp.autocast(enabled=False)
 /home/gganeshl/miniconda3/envs/speech/lib/python3.9/site-packages/espnet2/enh/encoder/stft_encoder.py:79: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
   @torch.cuda.amp.autocast(enabled=False)
-Fetching 37 files:   0%|          | 0/37 [00:00<?, ?it/s]Fetching 37 files: 100%|██████████| 37/37 [00:00<00:00, 5830.68it/s]
+Fetching 37 files:   0%|          | 0/37 [00:00<?, ?it/s]Fetching 37 files: 100%|██████████| 37/37 [00:00<00:00, 6872.86it/s]
 /home/gganeshl/miniconda3/envs/speech/bin/python /home/gganeshl/Aura/accent_adaptive_asr/asr_ft.py
+/home/gganeshl/miniconda3/envs/speech/bin/python /home/gganeshl/Aura/accent_adaptive_asr/asr_ft.py
+wandb: Currently logged in as: gganeshl (gganeshl-carnegie-mellon-university) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Using wandb-core as the SDK backend.  Please refer to https://wandb.me/wandb-core for more information.
+wandb: Tracking run with wandb version 0.19.6
+wandb: Run data is saved locally in /data/user_data/gganeshl/owsm_v3.1_ebf_small/exp/finetune/wandb/run-20250422_185711-4zl5337j
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run glamorous-sky-4
+wandb: ⭐️ View project at https://wandb.ai/gganeshl-carnegie-mellon-university/ESPnet_ESPnetEZDataTask
+wandb: 🚀 View run at https://wandb.ai/gganeshl-carnegie-mellon-university/ESPnet_ESPnetEZDataTask/runs/4zl5337j
+wandb: WARNING Serializing object of type list that is 400088 bytes
+wandb: WARNING Serializing object of type list that is 444376 bytes
+/home/gganeshl/miniconda3/envs/speech/lib/python3.9/site-packages/espnet2/train/trainer.py:638: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(
+/home/gganeshl/miniconda3/envs/speech/lib/python3.9/site-packages/espnet2/s2t/espnet_model.py:279: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(False):
+/home/gganeshl/miniconda3/envs/speech/lib/python3.9/site-packages/espnet2/train/trainer.py:856: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(
+/home/gganeshl/miniconda3/envs/speech/lib/python3.9/site-packages/espnet2/train/trainer.py:638: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(
+/home/gganeshl/miniconda3/envs/speech/lib/python3.9/site-packages/espnet2/s2t/espnet_model.py:279: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(False):
+/home/gganeshl/miniconda3/envs/speech/lib/python3.9/site-packages/espnet2/train/trainer.py:856: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(
+wandb:                                                                                
+wandb: 
+wandb: Run history:
+wandb:                                   epoch ▁▃▆█
+wandb:                               iteration ▁▁▁▁▁▂▂▂▂▂▂▂▃▃▃▄▄▄▄▄▄▄▅▅▅▅▅▅▅▅▆▇▇▇▇▇▇███
+wandb:                             metrics/acc ▁▂▂▃▃▃▄▄▄▅▅▅▅▅▅▇▇▇▇▇▇▇██████████████████
+wandb:                   metrics/backward_time █▅▅▅▄▄▄▄▄▅▄▄▄▄▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▁▂▃▃▃▃▃▃▃▃▃
+wandb:                            metrics/clip ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                    metrics/forward_time █▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▃▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                       metrics/grad_norm ▇█▅▅▃▃▃▃▃▃▃▃▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                       metrics/iter_time ▁▁▁▁▁▂▂▂▂▂▂▂▂▆▆▆▆▆▆▆▇█▄▄▄▄▄▃▄▄▄▄▄▄▄▇▇▇▇▇
+wandb:                            metrics/loss █▇▅▄▄▄▄▂▂▂▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                        metrics/loss_att █▅▄▄▄▃▃▃▃▃▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                        metrics/loss_ctc ███▇▇▆▆▆▆▆▅▄▄▃▃▃▃▃▃▃▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁
+wandb:                      metrics/loss_scale ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                      metrics/optim0_lr0 ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                 metrics/optim_step_time █▆▆▅▅▄▄▃▃▄▅▄▄▃▃▃▃▃▃▂▁▁▁▁▁▂▂▂▂▂▃▃▃▃▃▃▃▃▃▃
+wandb:                   train/train_acc_epoch ▁▆▇█
+wandb:         train/train_backward_time_epoch █▁▁▁
+wandb:                  train/train_clip_epoch ▁▁▁▁
+wandb:          train/train_forward_time_epoch █▁▄▁
+wandb: train/train_gpu_max_cached_mem_GB_epoch ▁▃██
+wandb:             train/train_grad_norm_epoch █▂▁▁
+wandb:             train/train_iter_time_epoch ▁▇▄█
+wandb:              train/train_loss_att_epoch █▃▂▁
+wandb:              train/train_loss_ctc_epoch █▄▂▁
+wandb:                  train/train_loss_epoch █▃▂▁
+wandb:            train/train_loss_scale_epoch ▁▁▁▁
+wandb:            train/train_optim0_lr0_epoch ▁▁▁▁
+wandb:       train/train_optim_step_time_epoch █▄▁▄
+wandb:                        train/train_time ▂▂▁▂▂▂▂▂▂▃▇▇▇▇▇▇▇▇▇▇██▇▇▇▄▄▄▄▄▅▆████████
+wandb:            train/train_train_time_epoch ▁▇▄█
+wandb:                   valid/valid_acc_epoch █▄▂▁
+wandb:               valid/valid_cer_ctc_epoch ▁█▇▇
+wandb:                   valid/valid_cer_epoch ▁▅▇█
+wandb: valid/valid_gpu_max_cached_mem_GB_epoch ▁▃██
+wandb:              valid/valid_loss_att_epoch ▁▄▆█
+wandb:              valid/valid_loss_ctc_epoch ▁▄▆█
+wandb:                  valid/valid_loss_epoch ▁▄▆█
+wandb:                   valid/valid_wer_epoch ▁▅▆█
+wandb: 
+wandb: Run summary:
+wandb:                                   epoch 4
+wandb:                               iteration 2000
+wandb:                             metrics/acc 0.97078
+wandb:                   metrics/backward_time 0.09757
+wandb:                            metrics/clip 100
+wandb:                    metrics/forward_time 0.12201
+wandb:                       metrics/grad_norm 33.74319
+wandb:                       metrics/iter_time 1.94692
+wandb:                            metrics/loss 1.15721
+wandb:                        metrics/loss_att 3.20201
+wandb:                        metrics/loss_ctc 7.95807
+wandb:                      metrics/loss_scale 1
+wandb:                      metrics/optim0_lr0 0.0001
+wandb:                 metrics/optim_step_time 0.01
+wandb:                   train/train_acc_epoch 0.97078
+wandb:         train/train_backward_time_epoch 0.09757
+wandb:                  train/train_clip_epoch 100
+wandb:          train/train_forward_time_epoch 0.12201
+wandb: train/train_gpu_max_cached_mem_GB_epoch 15.44336
+wandb:             train/train_grad_norm_epoch 33.74319
+wandb:             train/train_iter_time_epoch 1.94692
+wandb:              train/train_loss_att_epoch 3.20201
+wandb:              train/train_loss_ctc_epoch 7.95807
+wandb:                  train/train_loss_epoch 1.15721
+wandb:            train/train_loss_scale_epoch 1
+wandb:            train/train_optim0_lr0_epoch 0.0001
+wandb:       train/train_optim_step_time_epoch 0.01
+wandb:                        train/train_time 8.80478
+wandb:            train/train_train_time_epoch 8.80478
+wandb:                   valid/valid_acc_epoch 0.87051
+wandb:               valid/valid_cer_ctc_epoch 0.0931
+wandb:                   valid/valid_cer_epoch 0.08843
+wandb: valid/valid_gpu_max_cached_mem_GB_epoch 15.44336
+wandb:              valid/valid_loss_att_epoch 14.44778
+wandb:              valid/valid_loss_ctc_epoch 17.31246
+wandb:                  valid/valid_loss_epoch 15.30719
+wandb:                   valid/valid_wer_epoch 0.9
+wandb: 
+wandb: 🚀 View run glamorous-sky-4 at: https://wandb.ai/gganeshl-carnegie-mellon-university/ESPnet_ESPnetEZDataTask/runs/4zl5337j
+wandb: ⭐️ View project at: https://wandb.ai/gganeshl-carnegie-mellon-university/ESPnet_ESPnetEZDataTask
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /data/user_data/gganeshl/owsm_v3.1_ebf_small/exp/finetune/wandb/run-20250422_185711-4zl5337j/logs

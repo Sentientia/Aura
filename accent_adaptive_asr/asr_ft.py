@@ -19,11 +19,11 @@ dataset = dataset.remove_columns(["accent"])
 dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
 
 
-DIR = f"/data/user_data/gganeshl/owsm_v3.2/exp"
+DIR = f"/data/user_data/gganeshl/owsm_v3.1_ebf_small/exp"
 os.makedirs(DIR, exist_ok=True)
-EXP_DIR = f"/data/user_data/gganeshl/owsm_v3.2/exp/finetune"
+EXP_DIR = f"/data/user_data/gganeshl/owsm_v3.1_ebf_small/exp/finetune"
 os.makedirs(EXP_DIR, exist_ok=True)
-STATS_DIR = f"/data/user_data/gganeshl/owsm_v3.2/exp/stats_finetune"
+STATS_DIR = f"/data/user_data/gganeshl/owsm_v3.1_ebf_small/exp/stats_finetune"
 os.makedirs(STATS_DIR, exist_ok=True)
 
 # Split dataset into train, validation, and test
@@ -39,8 +39,8 @@ print(f"Validation size: {(valid_dataset)}")
 print(f"Test size: {(test_dataset)}")
 
 # FINETUNE_MODEL="espnet/owsm_v3.1_ebf_base"
-# FINETUNE_MODEL = "espnet/owsm_v3.1_ebf_small"
-FINETUNE_MODEL = "espnet/owsm_v3.2"
+FINETUNE_MODEL = "espnet/owsm_v3.1_ebf_small"
+# FINETUNE_MODEL = "espnet/owsm_v3.2"
 owsm_language="eng" # language code in ISO3
 
 pretrained_model = Speech2Text.from_pretrained(
@@ -49,7 +49,7 @@ pretrained_model = Speech2Text.from_pretrained(
     beam_size=1,
     device='cuda'
 )
-torch.save(pretrained_model.s2t_model.state_dict(), '/data/user_data/gganeshl/owsm_v3.2/exp/original.pth')
+torch.save(pretrained_model.s2t_model.state_dict(), '/data/user_data/gganeshl/owsm_v3.1_ebf_small/exp/original.pth')
 pretrain_config = vars(pretrained_model.s2t_train_args)
 tokenizer = pretrained_model.tokenizer
 converter = pretrained_model.converter

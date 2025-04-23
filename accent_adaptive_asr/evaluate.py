@@ -10,7 +10,7 @@ import pandas as pd
 from datasets import load_dataset, Audio
 
 # Initialize model
-FINETUNE_MODEL = "espnet/owsm_v3.1_ebf_base"
+FINETUNE_MODEL = "espnet/owsm_v3.2"
 owsm_language = "eng"  # language code in ISO3
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -23,7 +23,7 @@ pretrained_model = Speech2Text.from_pretrained(
 )
 
 # Save original model weights for comparison
-original_path = 'original.pth'
+original_path = '/data/user_data/gganeshl/owsm_v3.2/exp/original.pth'
 if not os.path.exists(original_path):
     print(f"Saving original model weights to {original_path}")
     torch.save(pretrained_model.s2t_model.state_dict(), original_path)
@@ -112,8 +112,8 @@ def main():
     
     # Define checkpoints to evaluate
     checkpoints = [
-        {"name": "Original", "path": "original.pth"},
-        {"name": "Checkpoint", "path": "./exp/finetune/valid.acc.best.pth"}
+        {"name": "Original", "path": "/data/user_data/gganeshl/owsm_v3.2/exp/original.pth"},
+        {"name": "Checkpoint", "path": "/data/user_data/gganeshl/owsm_v3.2/exp/finetune/valid.acc.best.pth"}
     ]
     
     # Filter to only include checkpoints that exist
@@ -176,7 +176,7 @@ def main():
     
     plt.tight_layout()
     plt.savefig("asr_evaluation_results.png")
-    print("Results plot saved to asr_evaluation_results.png")
+    print("Results plot saved to asr_evaluation_results-owsm_v3.2.png")
 
 if __name__ == "__main__":
     main()
