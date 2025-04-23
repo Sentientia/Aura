@@ -33,6 +33,11 @@ class Controller:
             self.state.history.append({"action": {"type":None, "payload":None} , 
                               "observation": {"type":"chat", "role":"user", "payload":user_input}})
     
+    def reset(self):
+        self.state = State()
+        self.agent = ChatAgent()
+        self.dst = DSTAction()
+    
     def run(self):
         while True:
             action = self.agent.step(self.state)

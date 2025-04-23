@@ -34,7 +34,7 @@ class CalendarAction(Action):
         if description:
             event['description'] = description
 
-        event = service.events().insert(calendarId='primary', body=event).execute()
+        event = service.events().insert(calendarId='c_444c7f9594b1824f34f0848dd4f8c73c2210816d8d87a24a134b6bcdcafad7c1@group.calendar.google.com', body=event).execute()
         return event
         
     def is_valid_utc(self, dt_str):
@@ -92,6 +92,14 @@ class CalendarAction(Action):
         return f"Calendar event created"
 
 if __name__ == "__main__":
+    creds = get_credentials()
+    service = build('calendar', 'v3', credentials=creds)
+
+    calendar_list = service.calendarList().list().execute()
+
+    for calendar_list_entry in calendar_list['items']:
+        print (calendar_list_entry)
+
     action = CalendarAction(thought="", payload=json.dumps({
         "start_time": "2025-04-22T10:00:00",
         "title": "Train to London Kings Cross",

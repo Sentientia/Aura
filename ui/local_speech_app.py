@@ -61,6 +61,8 @@ else:
 ASR_OPTIONS = {
     "OWSM CTC v3.1 1B": "espnet/owsm_ctc_v3.1_1B",
     "Whisper Tiny": "openai/whisper-tiny",
+    "OWSM v3.2": "espnet/owsm_v3.2",
+    "OWSM v3.1 EBF Small": "espnet/owsm_v3.1_ebf_small",
     # "Wav2Vec2 Small": "facebook/wav2vec2-base-960h",
     # "ESPnet English": "espnet/kan-bayashi_ljspeech_joint_finetune_conformer_fastspeech2_hifigan",
     
@@ -552,6 +554,7 @@ def reset_conversation():
     global conversation_history
     print("Resetting conversation history")
     conversation_history = []
+    controller.reset()
     return None, "", "", None, ""
 
 def display_conversation():
