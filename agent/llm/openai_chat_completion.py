@@ -1,16 +1,14 @@
 from openai import OpenAI
 import re
 import re
+import os
 
 # Modify OpenAI's API key and API base to use vLLM's API server.
-openai_api_key = "EMPTY"
-openai_api_base = "http://babel-14-17:8000/v1"
+openai_api_key = os.getenv("LLM_API_KEY", "EMPTY")
+openai_api_base = os.getenv("LLM_API_BASE", "http://babel-1-1:8000/v1")
+model = os.getenv("LLM_MODEL", "meta-llama/Llama-3.3-70B-Instruct")
 
-# completion = client.completions.create(model="meta-llama/Llama-3.3-70B-Instruct",
-#                                       prompt="San Francisco is a")
-# print("Completion result:", completion.choices[0].text)
-
-def get_response(messages,model="meta-llama/Llama-3.3-70B-Instruct"):
+def get_response(messages,model=model):
     pass
     client = OpenAI(
     api_key=openai_api_key,

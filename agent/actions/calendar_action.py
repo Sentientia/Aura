@@ -34,7 +34,7 @@ class CalendarAction(Action):
         if description:
             event['description'] = description
 
-        event = service.events().insert(calendarId='c_444c7f9594b1824f34f0848dd4f8c73c2210816d8d87a24a134b6bcdcafad7c1@group.calendar.google.com', body=event).execute()
+        event = service.events().insert(calendarId='primary', body=event).execute()
         return event
         
     def is_valid_utc(self, dt_str):
