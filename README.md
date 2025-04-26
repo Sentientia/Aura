@@ -3,6 +3,14 @@
 We develop a cascaded voice assistant system that includes ASR, TTS and a 
 ReAct based Agent for reasoning and action taking.
 
+## System Architecture
+
+![Aura System Architecture](docs/images/aura_system.png)
+
+## Aura: Demo
+
+[![Aura Demo](https://img.youtube.com/vi/cb7w0GVwwF0/0.jpg)](https://www.youtube.com/watch?v=cb7w0GVwwF0)
+
 ## Repository Structure
 
 ```
