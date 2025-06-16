@@ -8,3 +8,4 @@ accent_adaptive_asr/hf_model/
 accent_adaptive_asr/original.pth
 slurm/
 extras/
+evaluation/evaluation_outputs/
