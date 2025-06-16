@@ -2,25 +2,27 @@ from agent.agenthub.base_agent import BaseAgent
 from agent.controller.state import State
 from agent.actions.action import Action
 from agent.llm.openai_chat_completion import get_response
-from agent.agenthub.chat_agent.prompts import get_prompt
+from agent.agenthub.chat_agent.prompts import get_ui_chat_prompt
 from agent.actions.chat_action import ChatAction
 from agent.actions.calendar_action import CalendarAction
-from agent.actions.web_search_action import WebSearchAction
+from agent.actions.web_search_advanced_action import WebSearchAdvancedAction
 from agent.actions.contact_action import ContactAction
 from agent.actions.email_action import EmailAction
 import re
-import json
+from agent.controller.modes import Mode
 
 class ChatAgent(BaseAgent):
-    def __init__(self):
+    def __init__(self, mode:Mode=Mode.UI, io_mode:Mode=Mode.TEXT_2_TEXT_CASCADED):
         super().__init__()
+        self.mode = mode
+        self.io_mode = io_mode
        
     def step(self, state: State) -> Action:
         """
         Returns the next action to take based on the current state.
         """ 
 
-        prompt = get_prompt(state.conversation, state.dst, state.history[-1]["action"]["type"])
+        prompt = get_ui_chat_prompt(state.conversation, state.dst, state.history[-1]["action"]["type"] if state.history else None)
         response = get_response(prompt)
 
         thought, action_type, payload = self.parse_response(response)
@@ -31,7 +33,7 @@ class ChatAgent(BaseAgent):
         elif action_type == "calendar":
             action = CalendarAction(thought=thought, payload=payload)
         elif action_type == "web_search":
-            action = WebSearchAction(thought=thought, payload=payload)
+            action = WebSearchAdvancedAction(thought=thought, payload=payload)
         elif action_type == "contact":
             action = ContactAction(thought=thought, payload=None)
         elif action_type == "email":

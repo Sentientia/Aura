@@ -363,7 +363,8 @@ You can perform three types of actions:
 
 2. WEB_SEARCH: Query the web to:
    - Get specific details about the question asked by the user
-   - Only trigger when a user asks you to search for something on the web
+   - Only trigger if you don't know the answer or are not sure about the answer.
+   - You should use web search for answers that are likely to change with time.
    - Never trigger twice in a row
    - Only trigger once per user request
    - Always trigger a chat action after this action
@@ -409,7 +410,7 @@ One of: ['chat', 'web_search', 'calendar', 'contact', 'email']
 If action is 'chat':
 - Your next message to the user
 If action is 'web_search':
-- The search query to execute
+- JSON object with keys 'google_search_query' and 'wikipedia_search_query'
 If action is 'calendar':
 - The calendar event details to create in the form of a json object with start_time(MUST be a UTC string in the format '%Y-%m-%dT%H:%M:%S'), end_time(MUST be a UTC string in the format '%Y-%m-%dT%H:%M:%S' or None), title, description
 If action is 'email':
@@ -504,11 +505,11 @@ Action-Observation History:
     "observation": {"type":"chat", "role":"user", "payload":"Can you so a web search on the weather in Pittsburgh today?"}
   },
   {
-      "action": {"type":"web_search", "payload":"weather in Pittsburgh today"},
-      "observation": {"type":"web_search", "payload":json.dumps([{"snippet": "Pittsburgh, PA Forecast  Morning. 46. Chance of Rain0%  Afternoon. 67. Chance of Rain1 Evening. 53. Chance of Rain3%  Overnight. 43. Chance of Rain11% ...", "snippet_highlighted_words": ["Pittsburgh, PA Forecast"], "title": "Weather Forecast and Conditions for Pittsburgh, PA", "source": "The Weather Channel"}, {"snippet": "Weather Today in Pittsburgh, PA. Feels Like80. 6:31 am. 8:05 pm. High / Low. 80/52. Wind. 16 mph. Humidity. 44%. Dew Point. 55. Pressure. 29.90 in.", "snippet_highlighted_words": ["Feels Like80"], "title": "Weather Forecast and Conditions for Pittsburgh, PA", "source": "The Weather Channel"}, {"snippet": "Pittsburgh, PA Weather Forecast, with current conditions, wind, air quality ... Today's Weather. Tue, Apr 22. Partly sunny and pleasant Hi: 72. Tonight ...", "snippet_highlighted_words": ["Pittsburgh, PA Weather"], "title": "Pittsburgh, PA Weather Forecast", "source": "AccuWeather"}])}
+      "action": {"type":"web_search", "payload":{json.dumps({"google_search_query":"weather in Pittsburgh today", "wikipedia_search_query":"weather in Pittsburgh today"})}},
+      "observation": {"type":"web_search", "payload":json.dumps([["https://support.google.com/websearch/answer/13687874", "Weather data - Google Search Help Skip to main content Weather data Forecast information on Google Weather The Google Weather forecast is created from an internal forecasting system that utilizes weather models and observations from global weather agencies. Learn more about the Google Weather forecasting data sources: Deutscher Wetterdienst Environment Canada EUMETNET European Centre for Medium-range Weather Forecasts (ECMWF) National Oceanic and Atmospheric Administration (NOAA) National Weathe"], ["https://weather.com/weather/today/l/Pittsburgh+PA?canonicalCityId=2b688109f8f42b180dd7d5d4b689f696", "Weather Forecast and Conditions for Pittsburgh, PA - The Weather Channel | Weather.com Advertisement Advertisement Advertisement Type at least three characters to start auto complete. Recently searched locations will be displayed if there is no search query. The first option will be automatically selected. Use up and down arrows to change selection. Use escape to clear. Search City or Zip Code Close Pittsburgh, PA As of 12:47 am EDT 69  Cloudy Cloudy Day 80   Night 64  alertLevel2 Flood Watch Fe"], ["https://weather.com/weather/tenday/l/Pittsburgh+PA?canonicalCityId=2b688109f8f42b180dd7d5d4b689f696", "10-Day Weather Forecast for Pittsburgh, PA - The Weather Channel | weather.com Advertisement Advertisement Advertisement 10 Day Weather - Pittsburgh, PA As of 12:46 am EDT alertLevel2 Flood Watch Tonight Cloudy Cloudy -- / 64  Rain drop 7% E 6 mph Subtract Sun 15 | Night 64  Cloudy Rain drop 7% E 6 mph Cloudy skies. Low 64F. Winds E at 5 to 10 mph. Play Video Heads-up July To September: Your Temperature Outlook Humidity Humidity 92% UV index UV Index 0 of 11 Moonrise Moonrise -- Moon Phase - Day"], ["Wikipedia", "No Wikipedia article found for 'weather in Pittsburgh today'."]])}
   },
   {
-    "action": {"type":"chat", "role":"assistant", "payload":"The weather in Pittsburgh today is partly sunny and pleasant and feels like 80 degrees Fahrenheit."},
+    "action": {"type":"chat", "role":"assistant", "payload":"The current temperature in Pittsburgh is 69 degrees Fahrenheit. It is partly cloudy and there is a flood alert. The humidity is 92%."},
     "observation": {"type":"chat", "role":"user", "payload":"Can you find Joe's email id?"}
   },
   {
@@ -566,7 +567,7 @@ Based on the conversation history and current dialog state, determine the next a
 If last action was not a chat action, you MUST trigger a chat action now.
 """ 
 
-def get_prompt(action_observation_history: list[dict], dialog_state: dict, last_action: str) -> str:
+def get_ui_chat_prompt(action_observation_history: list[dict], dialog_state: dict, last_action: str) -> str:
     # Convert inputs to strings
     action_obs_str = json.dumps(action_observation_history)
     dialog_state_str = json.dumps(dialog_state)
