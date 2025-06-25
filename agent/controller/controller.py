@@ -53,6 +53,7 @@ class Controller:
         """
         input: {
             instruction:[(audio,sr)|text]
+            additional_instruction:str
         }
         Returns:
             Trajectory history
@@ -60,12 +61,15 @@ class Controller:
         #TODO: Handle E2E separately
         if self.io_mode == Mode.SPEECH_2_TEXT_CASCADED:
             audio, sr = input['instruction']
-            instruction = get_transcript(audio, sr, "OWSM CTC v3.1 1B")
+            instruction = get_transcript(audio, sr, "Whisper v3 Large")
             print(f"Transcript: {instruction}")
         elif self.io_mode == Mode.TEXT_2_TEXT_CASCADED:
             instruction = input['instruction']
         else:
             raise ValueError(f"Invalid IO mode or IO Mode not implemented: {self.io_mode}")
+        
+        if 'additional_instruction' in input and input['additional_instruction'] is not None:
+            instruction += f"\n{input['additional_instruction']}"
         
         self.state.special_instructions = instruction
         

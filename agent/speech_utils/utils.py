@@ -57,6 +57,7 @@ ASR_OPTIONS = {
     "Whisper Tiny": "openai/whisper-tiny",
     "OWSM v3.2": "espnet/owsm_v3.2",
     "OWSM v3.1 EBF Small": "espnet/owsm_v3.1_ebf_small",
+    "Whisper v3 Large": "openai/whisper-large-v3",
     # "Wav2Vec2 Small": "facebook/wav2vec2-base-960h",
     # "ESPnet English": "espnet/kan-bayashi_ljspeech_joint_finetune_conformer_fastspeech2_hifigan",
     
