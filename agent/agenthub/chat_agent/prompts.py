@@ -1,5 +1,5 @@
 import json
-
+from datetime import datetime
 
 #TODO: Fix DST fromat in in-context example
 
@@ -378,6 +378,7 @@ You can perform three types of actions:
 
 4. CONTACT: Get contact information by:
    - Getting contact information from the user's email
+   - It can also be used to get recently contacted ids from the user's email, so use it to get list of last contacted emails
    - Only trigger when a user asks you to get contact information like someone's email id
    - Never trigger twice in a row
    - Only trigger once per user request
@@ -412,7 +413,7 @@ If action is 'chat':
 If action is 'web_search':
 - JSON object with keys 'google_search_query' and 'wikipedia_search_query'
 If action is 'calendar':
-- The calendar event details to create in the form of a json object with start_time(MUST be a UTC string in the format '%Y-%m-%dT%H:%M:%S'), end_time(MUST be a UTC string in the format '%Y-%m-%dT%H:%M:%S' or None), title, description
+- The calendar event details to create in the form of a json object with event('create' or 'delete'), start_time(MUST be a UTC string in the format '%Y-%m-%dT%H:%M:%S'), end_time(MUST be a UTC string in the format '%Y-%m-%dT%H:%M:%S' or None), title, description
 If action is 'email':
 - The email details to send in the form of a json object with 'to', 'subject', 'content' keys
 </payload>
@@ -445,6 +446,7 @@ Remember:
 - Do not generate anything other than <thought>, <action>, <payload>
 - Ask one one or at most two questions at a time
 - If you have already booked a slot on the user's calendar, your next action should just be a chat action saying that the slot has been booked
+- The current time is {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
 Example 1:
 
@@ -494,6 +496,7 @@ Action-Observation History:
   },
   {
       "action": {"type":"calendar", "payload":json.dumps({
+        "event": "create",
         "start_time": "2025-04-25T10:00:00",
         "end_time": None,
         "title": "Train to London Kings Cross",

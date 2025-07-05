@@ -26,6 +26,7 @@ import os
 
 # Set custom temp directory before importing gradio
 os.environ['GRADIO_TEMP_DIR'] = os.path.join(os.path.expanduser("~"), "gradio_temp")
+CACHE_DIR = os.getenv('CACHE_DIR',"tmp/cache")
 # Make sure the directory exists
 os.makedirs(os.environ['GRADIO_TEMP_DIR'], exist_ok=True)
 
@@ -63,6 +64,7 @@ ASR_OPTIONS = {
     "Whisper Tiny": "openai/whisper-tiny",
     "OWSM v3.2": "espnet/owsm_v3.2",
     "OWSM v3.1 EBF Small": "espnet/owsm_v3.1_ebf_small",
+    "Whisper v3 Large": "openai/whisper-large-v3",
     # "Wav2Vec2 Small": "facebook/wav2vec2-base-960h",
     # "ESPnet English": "espnet/kan-bayashi_ljspeech_joint_finetune_conformer_fastspeech2_hifigan",
     
@@ -279,7 +281,7 @@ def load_asr_model(model_name):
         if "OWSM" in model_name:
             model_id = ASR_OPTIONS[model_name]
             try:
-                d = ModelDownloader(cachedir = "/data/user_data/gganeshl/speech")
+                d = ModelDownloader(cachedir = CACHE_DIR)
                 model_dict = d.download_and_unpack(model_id)
                 
                 if "train_config" in model_dict:
@@ -301,7 +303,7 @@ def load_asr_model(model_name):
         elif "ESPnet" in model_name and "OWSM" not in model_name:
             model_id = ASR_OPTIONS[model_name]
             try:
-                d = ModelDownloader(cachedir = "/data/user_data/gganeshl/speech")
+                d = ModelDownloader(cachedir = CACHE_DIR)
                 model_dict = d.download_and_unpack(model_id)
                 
                 if "train_config" in model_dict:

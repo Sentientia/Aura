@@ -12,7 +12,7 @@ class ContactAction(Action):
     def execute(self, state: State) -> str:
         creds = get_credentials()
         service = build('gmail', 'v1', credentials=creds)
-        results = service.users().messages().list(userId='me',maxResults=7).execute()
+        results = service.users().messages().list(userId='me',maxResults=10).execute()
         contacts =[]
         if 'messages' in results:
             for msg in results['messages']:
