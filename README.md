@@ -24,8 +24,6 @@
 
 ## 🏗️ System Architecture
 
-![Aura System Architecture](docs/images/aura_system_white.png)
-
 AURA employs a cascaded pipeline architecture that combines:
 - **ASR (Automatic Speech Recognition)**: Converts speech input to text
 - **LLM Agent**: Processes text, reasons about tasks, and decides on tool usage using ReAct-based reasoning
