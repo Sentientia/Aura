@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
 [![Gradio](https://img.shields.io/badge/Gradio-4.43.0-orange.svg)](https://gradio.app)
 
-**AURA** is the first open-source, speech-native assistant capable of completing complex, goal-driven tasks through dynamic tool invocation and multi-turn conversation. Despite advances in language and speech technologies, no previous open-source system enabled full speech-to-speech, multi-turn dialogue with integrated tool use and agentic reasoning.
+**AURA** is the first open-source, speech-native assistant capable of completing complex, goal-driven tasks through dynamic tool invocation and multi-turn conversation.
 
 ![AURA Overview](docs/images/aura_overview.png)
 
@@ -27,20 +27,11 @@
 ![Aura System Architecture](docs/images/aura_system_white.png)
 
 AURA employs a cascaded pipeline architecture that combines:
-- **ASR (Automatic Speech Recognition)**: Converts speech input to text with accent adaptation
+- **ASR (Automatic Speech Recognition)**: Converts speech input to text
 - **LLM Agent**: Processes text, reasons about tasks, and decides on tool usage using ReAct-based reasoning
 - **TTS (Text-to-Speech)**: Converts agent responses back to natural speech
 - **Tool Integration**: Seamless integration with external APIs and services
 
-### Technical Approach
-
-AURA combines open-weight ASR, TTS, and LLMs in a cascaded pipeline design that enables:
-
-1. **Accent-Adaptive ASR**: Fine-tuned speech recognition models that adapt to different accents and speaking styles
-2. **ReAct-Based Reasoning**: The agent uses Reasoning and Acting (ReAct) paradigm to break down complex tasks
-3. **Dynamic Tool Selection**: Intelligent selection and invocation of appropriate tools based on user intent
-4. **Context Preservation**: Maintains conversation context across multiple turns for coherent task completion
-5. **Modular Architecture**: Easy extensibility for adding new tools and capabilities
 
 ## 📁 Repository Structure
 
@@ -49,7 +40,7 @@ AURA combines open-weight ASR, TTS, and LLMs in a cascaded pipeline design that 
 ├── agent/                      # Core agent implementation
 │   ├── actions/                # Action handlers for different tasks
 │   │   ├── calendar_action.py  # Calendar booking functionality
-│   │   ├── contact_action.py   # Contact lookup and management
+│   │   ├── contact_action.py   # Contact lookup
 │   │   ├── email_action.py     # Email composition and sending
 │   │   ├── web_search_action.py # Web search capabilities
 │   │   └── chat_action.py      # General chat functionality
@@ -78,8 +69,6 @@ AURA combines open-weight ASR, TTS, and LLMs in a cascaded pipeline design that 
 │   └── voicebench/            # VoiceBench evaluation scripts
 │
 ├── llm_serve/                  # Language model serving utilities
-│
-├── LLaMA-Factory/              # LLM fine-tuning framework
 │
 ├── docs/                       # Documentation and assets
 │   └── images/                # System diagrams and screenshots
@@ -125,15 +114,9 @@ AURA combines open-weight ASR, TTS, and LLMs in a cascaded pipeline design that 
 
 5. **Setup tool credentials** (Required for tool use, optional for chat-only functionality)
    
-   Copy the example secrets directory and configure your credentials:
-   ```bash
-   cp -r agent/secrets_example agent/secrets
-   ```
-   
-   Configure the following in `agent/secrets/`:
    - **Google Cloud Platform**: Set up GCP account, enable necessary APIs, and place `credentials.json`
-   - **SerpAPI**: Get API key for web search functionality
-   - **Email**: Configure email service credentials if using email actions
+   - Setup credential with the help of examples in agent/secret_examples
+   
 
 ### Running AURA
 
@@ -141,43 +124,11 @@ AURA combines open-weight ASR, TTS, and LLMs in a cascaded pipeline design that 
    ```bash
    python ui/local_speech_app.py
    ```
-   
-   The Gradio interface will be available at `http://localhost:7860`
 
-## 🛠️ Advanced Usage
-
-### Fine-tuning Components
-
-#### ASR Fine-tuning
-```bash
-cd accent_adaptive_asr
-bash ft.sh
-```
-
-#### Dialog State Tracking Fine-tuning
-```bash
-cd dst
-python prepare_data.py  # Prepare training data
-# Use the configuration files in dst/finetune/configs/ for fine-tuning
-```
-
-### Evaluation
-
-#### VoiceBench Evaluation
-```bash
-cd evaluation/voicebench
-python eval.py
-```
-
-#### ASR Evaluation
-```bash
-cd accent_adaptive_asr
-python evaluate.py
-```
 
 ## 📊 Performance
 
-AURA achieves state-of-the-art performance on multiple benchmarks:
+AURA achieves strong performance on multiple benchmarks:
 
 - **VoiceBench OpenBookQA**: 92.75% (outperforming all open-weight systems, approaching GPT-4o)
 - **AlpacaEval**: 4.39 (competitive with other open-weight systems)
@@ -189,18 +140,16 @@ AURA's modular design makes it easy to add new tools:
 
 1. Create a new action class in `agent/actions/`
 2. Implement the required methods following the existing action patterns
-3. Register the action in the agent controller
-4. Add any necessary credentials to the secrets configuration
+3. Provide natural language explanation in the agent prompt.
+4. Route to appropriate Action class in agent step method.
 
 Example action structure:
 ```python
 from agent.actions.action import Action
 
 class MyCustomAction(Action):
-    def __init__(self):
-        super().__init__()
-        self.name = "my_custom_action"
-        self.description = "Description of what this action does"
+    def __init__(self, thought: str, payload: str):
+        super().__init__(thought, payload)
     
     def execute(self, params):
         # Implementation here
@@ -209,41 +158,19 @@ class MyCustomAction(Action):
 
 ## 🔗 Supported Tools
 
-- **📅 Calendar**: Book appointments, check availability, manage schedules
-- **👥 Contacts**: Look up contact information, add new contacts
-- **🔍 Web Search**: Search the web for information using SerpAPI
+- **📅 Calendar**: Book appointments
+- **👥 Contacts**: Look up contact information
+- **🔍 Web Search**: Search the web for information
 - **📧 Email**: Compose and send emails
 - **💬 Chat**: General conversation and question answering
 
-## 🔧 Troubleshooting
-
-### Common Issues
-
-**Environment Setup**
-- Ensure you're using Python 3.9+ and have activated the conda environment
-- If you encounter CUDA issues, verify your GPU drivers and CUDA installation
-- For M1/M2 Macs, some dependencies may require additional configuration
-
-**Speech Processing**
-- Microphone permissions may be required for speech input
-- Audio quality affects ASR performance - use a good quality microphone
-- Check audio device settings if speech input is not working
-
-**Tool Integration**
-- Verify all required API keys are set in environment variables
-- Check that credentials in `agent/secrets/` are properly configured
-- Some tools require specific permissions (e.g., Google Calendar API access)
-
-**Memory Requirements**
-- AURA requires significant memory for speech models
-- Consider using smaller model variants if running on limited hardware
-- GPU memory of 8GB+ recommended for optimal performance
 
 ### Getting Help
 
 - Check the [Issues](https://github.com/Sentientia/Aura/issues) page for known problems
 - Review the paper for technical details and methodology
 - Examine the example configurations in `agent/secrets_example/`
+- Raise a new issue if your question is not answered.
 
 ## 📚 Research & Development
 
@@ -268,14 +195,17 @@ This project is open-source. Please check the repository for license details.
 If you use AURA in your research, please cite our paper:
 
 ```bibtex
-@article{maben2025aura,
-  title={AURA: Agent for Understanding, Reasoning, and Automated Tool Use in Voice-Driven Tasks},
-  author={Maben, Leander Melroy and Lakshmy, Gayathri Ganesh and Radhakrishnan, Srijith and Arora, Siddhant and Watanabe, Shinji},
-  journal={arXiv preprint arXiv:2506.23049},
-  year={2025}
+@misc{maben2025auraagentunderstandingreasoning,
+      title={AURA: Agent for Understanding, Reasoning, and Automated Tool Use in Voice-Driven Tasks}, 
+      author={Leander Melroy Maben and Gayathri Ganesh Lakshmy and Srijith Radhakrishnan and Siddhant Arora and Shinji Watanabe},
+      year={2025},
+      eprint={2506.23049},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2506.23049}, 
 }
 ```
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 We thank the open-source community for the foundational models and tools that made AURA possible, including ESPnet, Transformers, and the broader speech and NLP research community.
